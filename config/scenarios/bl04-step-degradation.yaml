@@ -1,0 +1,60 @@
+# =============================================================================
+# BL-04: Step Load Degradation Curve
+# Measure degradation at each load level with recovery phase
+# Priority: P0
+# =============================================================================
+
+id: BL-04
+name: Step Load Degradation Curve
+category: baseline
+priority: P0
+description: Step through load levels and measure degradation curve with recovery
+
+service: client-oppy-configuration
+
+# Custom executor - 15 minutes at each load level
+customExecutor:
+  type: ramping-arrival-rate
+  startRate: 25
+  timeUnit: 1s
+  preAllocatedVUs: 150
+  stages:
+    - duration: 15m                                  # 25 req/s (0.5x design)
+      target: 25
+    - duration: 15m                                  # 50 req/s (1x design point)
+      target: 50
+    - duration: 15m                                  # 75 req/s (1.5x design)
+      target: 75
+    - duration: 15m                                  # 100 req/s (2x design)
+      target: 100
+    - duration: 15m                                  # Back to 50 (recovery test)
+      target: 50
+
+trafficMix:
+  listConfigs: 25
+  getConfigById: 25
+  getVersions: 10
+  getPlatforms: 10
+  createConfig: 15
+  updateConfig: 10
+  deleteConfig: 5
+
+slos:
+  latency_get_config_by_id:
+    p50: 50
+    p95: 200
+    p99: 500
+  latency_get_configs:
+    p50: 100
+    p95: 500
+    p99: 1000
+  errors:
+    rate: 0.01                                       # 1% error rate tolerance
+
+passCriteria:
+  - At 25 req/s - well within SLO
+  - At 50 req/s - within SLO (design point)
+  - At 75 req/s - latency increases, error rate < 1%
+  - At 100 req/s - latency 2-3x baseline, still functional
+  - Recovery to 50 req/s - returns to baseline within 2min
+  - Curve is linear or gradual, not exponential

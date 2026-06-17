@@ -1,0 +1,23 @@
+# =============================================================================
+# SMOKE PROFILE
+# Quick validation that test runs successfully (~35 seconds)
+# Usage: make run-smoke SCENARIO=bl01
+# When to use: Before commits, CI pipelines, quick sanity checks
+# =============================================================================
+
+name: smoke
+description: Quick validation - 1 VU, 30s, verify test works end-to-end
+
+executor: ramping-vus                                # Gradually ramp VUs
+startVUs: 0                                          # Start with no VUs
+
+stages:
+  - duration: 10s                                    # Ramp UP to 1 VU
+    target: 1
+  - duration: 20s                                    # SUSTAIN at 1 VU
+    target: 1
+  - duration: 5s                                     # Ramp DOWN to 0
+    target: 0
+
+thresholdMultiplier: 5.0                             # Very relaxed (5x SLO allowed)
+gracefulRampDown: 5s                                 # Quick shutdown

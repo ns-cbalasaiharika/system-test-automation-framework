@@ -1,0 +1,21 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: k6-perf-testing
+
+# ConfigMaps are generated dynamically by run-distributed.sh
+# This kustomization is for manual/static ConfigMap management.
+#
+# To generate ConfigMaps from all scenario scripts:
+#   for f in ../../scenarios/baseline/*.js; do
+#     kubectl create configmap "k6-$(basename $f .js)" --from-file="$(basename $f)=$f" -n k6-perf-testing
+#   done
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+configMapGenerator:
+  - name: k6-scenario-bl01
+    namespace: k6-perf-testing
+    files:
+      - bl01-golden-baseline.js=../../scenarios/baseline/bl01-golden-baseline.js

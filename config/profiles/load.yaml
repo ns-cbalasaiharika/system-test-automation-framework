@@ -1,0 +1,23 @@
+# =============================================================================
+# LOAD PROFILE
+# Standard load test at design point (~63 minutes)
+# Usage: make run SCENARIO=bl01 PROFILE=load
+# When to use: Regular performance validation, release testing
+# =============================================================================
+
+name: load
+description: Standard load test - ramp to target VUs, sustain 60min, ramp down
+
+executor: ramping-vus
+startVUs: 0
+
+stages:
+  - duration: 2m                                     # Ramp UP: 0 → 50 VUs
+    target: 50
+  - duration: 60m                                    # SUSTAIN: Hold at 50 VUs
+    target: 50
+  - duration: 1m                                     # Ramp DOWN: 50 → 0 VUs
+    target: 0
+
+thresholdMultiplier: 1.0                             # Strict SLOs - must meet exact thresholds
+gracefulRampDown: 30s                                # Wait for in-flight requests

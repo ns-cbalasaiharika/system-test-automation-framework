@@ -1,0 +1,24 @@
+# =============================================================================
+# SOAK PROFILE
+# Long-running test to detect memory leaks and degradation (~4 hours)
+# Usage: make run SCENARIO=bl09 PROFILE=soak
+# When to use: Before releases, after memory-related changes
+# What to watch: Memory trend, goroutine count, response time drift
+# =============================================================================
+
+name: soak
+description: Soak test - sustained moderate load for 4+ hours to detect leaks
+
+executor: ramping-vus
+startVUs: 0
+
+stages:
+  - duration: 5m                                     # Ramp UP: Reach steady state
+    target: 50
+  - duration: 240m                                   # SUSTAIN: Hold for 4 HOURS
+    target: 50
+  - duration: 5m                                     # Ramp DOWN: Observe cleanup
+    target: 0
+
+thresholdMultiplier: 1.0                             # Strict - performance shouldn't degrade over time
+gracefulRampDown: 30s

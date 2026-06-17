@@ -1,0 +1,34 @@
+# =============================================================================
+# SPIKE PROFILE
+# Sudden traffic bursts to test cold-start and autoscaling (~12 minutes)
+# Usage: make run SCENARIO=bl06 PROFILE=spike
+# When to use: Testing autoscaling, cache warmup, HPA triggers
+# What to watch: Pod scaling time, response time during spike, error rate
+# =============================================================================
+
+name: spike
+description: Spike test - burst from idle to high load, test cold-start behavior
+
+executor: ramping-vus
+startVUs: 0
+
+stages:
+  - duration: 10s                                    # IDLE: Start at zero (cold)
+    target: 0
+  - duration: 10s                                    # SPIKE 1: Instant 0 → 100 VUs
+    target: 100
+  - duration: 5m                                     # SUSTAIN: Hold spike
+    target: 100
+  - duration: 10s                                    # DROP: Instant drop to 0
+    target: 0
+  - duration: 2m                                     # IDLE: Cool-down (pods may scale down)
+    target: 0
+  - duration: 10s                                    # SPIKE 2: Second burst
+    target: 100
+  - duration: 5m                                     # SUSTAIN: Hold second spike
+    target: 100
+  - duration: 30s                                    # Ramp DOWN: End test
+    target: 0
+
+thresholdMultiplier: 3.0                             # Relaxed - spikes cause temp degradation
+gracefulRampDown: 10s

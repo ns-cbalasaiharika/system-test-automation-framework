@@ -1,0 +1,30 @@
+apiVersion: k6.io/v1alpha1
+kind: TestRun
+metadata:
+  name: bl01-golden-baseline
+  namespace: k6-perf-testing
+  labels:
+    scenario: bl01
+    category: baseline
+    priority: p0
+    profile: load
+spec:
+  parallelism: 4
+  script:
+    configMap:
+      name: k6-scenario-bl01
+      file: bl01-golden-baseline.js
+  runner:
+    image: grafana/k6:latest
+    env:
+      - name: ENV
+        value: "staging"
+      - name: PROFILE
+        value: "load"
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "512Mi"
+      limits:
+        cpu: "1000m"
+        memory: "1Gi"

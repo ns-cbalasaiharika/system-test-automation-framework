@@ -1,0 +1,49 @@
+# =============================================================================
+# BL-06: Burst After Idle
+# Test cold pool/cache penalty after system has been idle
+# Priority: P1
+# =============================================================================
+
+id: BL-06
+name: Burst After Idle
+category: baseline
+priority: P1
+description: Cold pool/cache penalty - blast 100 req/s immediately after 5min idle
+
+service: client-oppy-configuration
+
+# Custom executor - constant 100 req/s immediately
+customExecutor:
+  type: constant-arrival-rate
+  rate: 100                                          # 100 requests per second
+  timeUnit: 1s
+  duration: 7m                                       # 7 minute burst
+  preAllocatedVUs: 150
+
+trafficMix:
+  listConfigs: 25
+  getConfigById: 25
+  getVersions: 10
+  getPlatforms: 10
+  createConfig: 15
+  updateConfig: 10
+  deleteConfig: 5
+
+slos:
+  latency_get_config_by_id:                          # Relaxed for cold start
+    p50: 200
+    p95: 1000
+    p99: 3000
+  latency_get_configs:
+    p50: 500
+    p95: 2000
+    p99: 5000
+  errors:
+    rate: 0.0                                        # Zero errors expected
+
+passCriteria:
+  - p99 stabilizes within 30s
+  - Zero 5xx during burst
+  - DB pool ramps without hitting 25/25
+  - Redis rebuilds within 30s (hit ratio > 70%)
+  - Time-to-stable < 30s

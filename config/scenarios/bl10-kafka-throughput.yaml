@@ -1,0 +1,50 @@
+# =============================================================================
+# BL-10: Kafka Producer Throughput Baseline
+# 100% writes to stress test Kafka producer
+# Priority: P1
+# =============================================================================
+
+id: BL-10
+name: Kafka Producer Throughput Baseline
+category: baseline
+priority: P1
+description: 100% writes at 50 req/s for 30min - verify Kafka delivery and buffer health
+
+service: client-oppy-configuration
+
+# 100% writes - stress test Kafka producer
+trafficMix:
+  listConfigs: 0                                     # No reads
+  getConfigById: 0
+  getVersions: 0
+  getPlatforms: 0
+  createConfig: 50                                   # 50% creates
+  updateConfig: 50                                   # 50% updates
+  deleteConfig: 0                                    # No deletes (to accumulate data)
+
+slos:
+  latency_post_config:
+    p50: 200
+    p95: 1000
+    p99: 2000
+  latency_patch_config:
+    p50: 200
+    p95: 1000
+    p99: 2000
+  errors:
+    rate: 0.001
+
+# Kafka validation specific configuration
+kafkaValidation:
+  expectedDeliveryRate: 0.99                         # 99% delivery required
+  maxBufferDepth: 500                                # Max 500 of 1000 buffer
+  maxProduceLatencyMs: 100                           # Max produce latency
+  validateCloudEventsFormat: true                    # Validate CloudEvents v1.0
+
+passCriteria:
+  - Buffer < 500 of 1000 max (50% headroom)
+  - Event delivery >= 99%
+  - Zero drops
+  - Produce latency < 100ms
+  - Events properly CloudEvents v1.0
+  - Zero duplicates

@@ -1,0 +1,68 @@
+# =============================================================================
+# BL-01: Golden Run Baseline
+# Primary benchmark scenario - establishes performance baselines
+# Priority: P0 (must pass before any release)
+# =============================================================================
+
+id: BL-01
+name: Golden Run Baseline
+category: baseline
+priority: P0
+description: Establish all performance benchmarks under standard 70:30 read:write mix
+
+service: client-oppy-configuration                   # Target service from environments
+
+# Traffic distribution - weights must sum to 100
+# 70% reads (list + get + versions + platforms), 30% writes (create + update + delete)
+trafficMix:
+  listConfigs: 25                                    # GET /client/config
+  getConfigById: 25                                  # GET /client/config/{id}
+  getVersions: 10                                    # GET /client/versions
+  getPlatforms: 10                                   # GET /client/platforms
+  createConfig: 15                                   # POST /client/config
+  updateConfig: 10                                   # PATCH /client/config/{id}
+  deleteConfig: 5                                    # DELETE /client/config/{id}
+
+# Service Level Objectives - test FAILS if violated
+# Values in milliseconds, rate as decimal (0.001 = 0.1%)
+slos:
+  latency_get_configs:                               # List all configs
+    p50: 100
+    p95: 500
+    p99: 1000
+  latency_get_config_by_id:                          # Get single config
+    p50: 50
+    p95: 200
+    p99: 500
+  latency_get_versions:                              # Get versions
+    p50: 100
+    p95: 500
+    p99: 1000
+  latency_get_platforms:                             # Get platforms
+    p50: 100
+    p95: 500
+    p99: 1000
+  latency_post_config:                               # Create config
+    p50: 200
+    p95: 1000
+    p99: 2000
+  latency_patch_config:                              # Update config
+    p50: 200
+    p95: 1000
+    p99: 2000
+  latency_delete_config:                             # Delete config
+    p50: 200
+    p95: 1000
+    p99: 2000
+  errors:
+    rate: 0.001                                      # Max 0.1% error rate
+
+# Human-readable pass criteria (infra metrics need external monitoring)
+passCriteria:
+  - All per-endpoint p99 latencies within SLO
+  - Error rate < 0.1%
+  - CPU < 70% of limit
+  - Memory < 80% of GOMEMLIMIT
+  - Goroutine count stable (no monotonic increase)
+  - Redis hit ratio > 80%
+  - Kafka consumer lag < 100 msgs

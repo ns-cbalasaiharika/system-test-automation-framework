@@ -1,0 +1,81 @@
+import http from "k6/http";
+import { check } from "k6";
+
+/**
+ * Post-test validation: verify DB state matches expected outcomes.
+ * Used in data integrity scenarios (DI-*).
+ */
+export function validateConfigCount(baseUrl, headers, expectedMinCount) {
+  const res = http.get(`${baseUrl}/client/config`, { headers });
+  if (res.status !== 200) return { pass: false, reason: "list failed" };
+
+  try {
+    const body = JSON.parse(res.body);
+    const count = body.data ? body.data.length : 0;
+    const pass = count >= expectedMinCount;
+    return { pass, actual: count, expected: expectedMinCount };
+  } catch (_) {
+    return { pass: false, reason: "parse failed" };
+  }
+}
+
+/**
+ * Validate no cross-tenant data leakage.
+ * Each config name should contain the tenant prefix.
+ */
+export function validateTenantIsolation(baseUrl, tenantId, headers) {
+  const res = http.get(`${baseUrl}/client/config`, { headers });
+  if (res.status !== 200) return { pass: false, reason: "list failed" };
+
+  try {
+    const body = JSON.parse(res.body);
+    if (!body.data) return { pass: true, configs: 0 };
+
+    const leaked = body.data.filter((c) => {
+      if (!c.configurationName) return false;
+      if (c.configurationName.startsWith("k6-")) {
+        return !c.configurationName.includes(tenantId);
+      }
+      return false;
+    });
+
+    return {
+      pass: leaked.length === 0,
+      total: body.data.length,
+      leaked: leaked.length,
+    };
+  } catch (_) {
+    return { pass: false, reason: "parse failed" };
+  }
+}
+
+/**
+ * Validate priority contiguity (no gaps after bulk operations).
+ */
+export function validatePriorityContiguous(baseUrl, headers) {
+  const res = http.get(`${baseUrl}/client/config`, { headers });
+  if (res.status !== 200) return { pass: false, reason: "list failed" };
+
+  try {
+    const body = JSON.parse(res.body);
+    if (!body.data || body.data.length === 0) return { pass: true };
+
+    const priorities = body.data
+      .map((c) => parseInt(c.priority))
+      .filter((p) => !isNaN(p))
+      .sort((a, b) => a - b);
+
+    for (let i = 1; i < priorities.length; i++) {
+      if (priorities[i] !== priorities[i - 1] + 1) {
+        return {
+          pass: false,
+          gap: { after: priorities[i - 1], before: priorities[i] },
+        };
+      }
+    }
+
+    return { pass: true, count: priorities.length };
+  } catch (_) {
+    return { pass: false, reason: "parse failed" };
+  }
+}

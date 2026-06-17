@@ -1,0 +1,32 @@
+# =============================================================================
+# STRESS PROFILE
+# Find breaking point by exceeding design load (~23 minutes)
+# Usage: make run SCENARIO=bl01 PROFILE=stress
+# When to use: Capacity planning, before major releases
+# What to watch: Error rates, latency degradation, resource exhaustion
+# =============================================================================
+
+name: stress
+description: Stress test - ramp incrementally to 3x design load, find breaking point
+
+executor: ramping-vus
+startVUs: 0
+
+stages:
+  - duration: 2m                                     # Step 1: Ramp to 1x load
+    target: 50
+  - duration: 5m                                     # Step 1: Hold at 1x (baseline)
+    target: 50
+  - duration: 2m                                     # Step 2: Ramp to 2x load
+    target: 100
+  - duration: 5m                                     # Step 2: Hold at 2x
+    target: 100
+  - duration: 2m                                     # Step 3: Ramp to 3x load
+    target: 150
+  - duration: 5m                                     # Step 3: Hold at 3x - watch for failures
+    target: 150
+  - duration: 2m                                     # Ramp DOWN: Observe recovery
+    target: 0
+
+thresholdMultiplier: 2.0                             # Relaxed - 2x SLO allowed under stress
+gracefulRampDown: 30s

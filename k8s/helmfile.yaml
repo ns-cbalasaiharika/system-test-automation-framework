@@ -1,0 +1,47 @@
+# Helmfile — deploys the full k6 performance testing stack.
+# Includes: k6-operator, InfluxDB v2, Grafana with provisioned dashboards.
+#
+# Usage:
+#   helmfile repos && helmfile sync
+#
+# Prerequisites:
+#   - kubectl configured to target cluster
+#   - helmfile installed (brew install helmfile)
+#   - helm-secrets plugin (optional, for encrypted credentials)
+
+repositories:
+  - name: grafana
+    url: https://grafana.github.io/helm-charts
+  - name: influxdata
+    url: https://helm.influxdata.com
+
+helmDefaults:
+  wait: true
+  timeout: 300
+
+releases:
+  # k6-operator — manages TestRun CRDs and spins up k6 runner pods
+  - name: k6-operator
+    namespace: k6-operator-system
+    createNamespace: true
+    chart: grafana/k6-operator
+    version: "3.*"
+    values:
+      - operator/helm-values.yaml
+
+  # InfluxDB v2 — stores k6 test metrics for querying/visualization
+  - name: influxdb
+    namespace: k6-perf-testing
+    createNamespace: true
+    chart: influxdata/influxdb2
+    version: "2.*"
+    values:
+      - influxdb/helm-values.yaml
+
+  # Grafana — dashboards for test result visualization
+  - name: grafana
+    namespace: k6-perf-testing
+    chart: grafana/grafana
+    version: "8.*"
+    values:
+      - grafana/helm-values.yaml

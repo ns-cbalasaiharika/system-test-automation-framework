@@ -1,0 +1,46 @@
+# =============================================================================
+# BL-02: Write-Heavy Profile
+# Stress DB and Kafka with 90% write operations
+# Priority: P0
+# =============================================================================
+
+id: BL-02
+name: Write-Heavy Profile
+category: baseline
+priority: P0
+description: DB and Kafka stress with 90% writes, 10% reads
+
+service: client-oppy-configuration
+
+# 90% writes, 10% reads
+trafficMix:
+  listConfigs: 5                                     # 5% reads
+  getConfigById: 5                                   # 5% reads
+  getVersions: 0                                     # disabled
+  getPlatforms: 0                                    # disabled
+  createConfig: 40                                   # 40% creates
+  updateConfig: 30                                   # 30% updates
+  deleteConfig: 20                                   # 20% deletes
+
+slos:
+  latency_post_config:
+    p50: 200
+    p95: 1000
+    p99: 2000
+  latency_patch_config:
+    p50: 200
+    p95: 1000
+    p99: 2000
+  latency_delete_config:
+    p50: 200
+    p95: 1000
+    p99: 2000
+  errors:
+    rate: 0.005                                      # Higher tolerance for write-heavy
+
+passCriteria:
+  - POST/PATCH/DELETE p99 <= 2s
+  - Error rate < 0.5%
+  - DB pool active stays below 25 max
+  - Kafka buffer depth < 500 of 1000 max
+  - Deadlock rate < 1% of writes

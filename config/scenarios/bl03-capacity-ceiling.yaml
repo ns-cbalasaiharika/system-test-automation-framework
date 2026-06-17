@@ -1,0 +1,67 @@
+# =============================================================================
+# BL-03: Capacity Ceiling
+# Find the breaking point by ramping load every 3 minutes
+# Priority: P0
+# =============================================================================
+
+id: BL-03
+name: Capacity Ceiling
+category: baseline
+priority: P0
+description: Ramp to breaking point - increase load every 3min until degradation
+
+service: client-oppy-configuration
+
+# Custom executor - arrival rate based (constant RPS regardless of response time)
+customExecutor:
+  type: ramping-arrival-rate
+  startRate: 10                                      # Start at 10 req/s
+  timeUnit: 1s
+  preAllocatedVUs: 200                               # Max VUs to handle load
+  stages:
+    - duration: 3m                                   # 10 req/s baseline
+      target: 10
+    - duration: 3m                                   # Step to 20 req/s
+      target: 20
+    - duration: 3m                                   # Step to 30 req/s
+      target: 30
+    - duration: 3m                                   # Step to 50 req/s (design point)
+      target: 50
+    - duration: 3m                                   # Step to 75 req/s
+      target: 75
+    - duration: 3m                                   # Step to 100 req/s
+      target: 100
+    - duration: 3m                                   # Step to 125 req/s
+      target: 125
+    - duration: 3m                                   # Step to 150 req/s (3x design)
+      target: 150
+    - duration: 2m                                   # Ramp down
+      target: 0
+
+trafficMix:
+  listConfigs: 25
+  getConfigById: 25
+  getVersions: 10
+  getPlatforms: 10
+  createConfig: 15
+  updateConfig: 10
+  deleteConfig: 5
+
+slos:
+  latency_get_config_by_id:
+    p50: 50
+    p95: 200
+    p99: 500
+  latency_get_configs:
+    p50: 100
+    p95: 500
+    p99: 1000
+  errors:
+    rate: 0.05                                       # 5% error rate allowed at breaking point
+
+passCriteria:
+  - System sustains 50 req/s within SLO
+  - Breaking point identified at exact req/s
+  - First saturation component identified
+  - Degradation is gradual not cliff-edge
+  - Recovers within 2min after load reduced

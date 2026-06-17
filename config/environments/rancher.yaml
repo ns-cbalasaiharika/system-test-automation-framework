@@ -1,0 +1,29 @@
+# =============================================================================
+# RANCHER ENVIRONMENT
+# Dedicated performance testing cluster
+# Usage: make run-k8s SCENARIO=bl01 ENV=rancher
+# =============================================================================
+
+name: rancher
+description: Dedicated Rancher perf cluster - k6 runners target perf namespace
+
+# In-cluster DNS URLs in 'perf' namespace
+services:
+  client-oppy-configuration: http://client-oppy-configuration.perf.svc:6010
+  client-oppy-steering: http://client-oppy-steering.perf.svc:6020
+  client-oppy-orchestrator: http://client-oppy-orchestrator.perf.svc:6030
+  addonman: http://addonman.perf.svc:8080
+  downloader: http://downloader.perf.svc:8081
+  device-classification: http://device-classification.perf.svc:8082
+
+defaults:
+  tenantId: perf-tenant-001                          # Dedicated perf tenant
+  
+  headers:
+    Content-Type: application/json
+    x-netskope-tenantid: perf-tenant-001
+    x-netskope-user-email: k6-perf-test@netskope.com
+  
+  thinkTime:                                         # Realistic think times
+    minMs: 500                                       # Longer delays for prod-like
+    maxMs: 2000

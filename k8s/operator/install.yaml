@@ -1,0 +1,34 @@
+# k6-operator installation
+# Option 1: Direct bundle install (recommended for quick setup)
+# kubectl apply -f https://github.com/grafana/k6-operator/releases/latest/download/bundle.yaml
+#
+# Option 2: Helm (recommended for production)
+# helm repo add grafana https://grafana.github.io/helm-charts
+# helm repo update
+# helm install k6-operator grafana/k6-operator --namespace k6-operator-system --create-namespace
+#
+# This file contains Helm values for production deployments:
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k6-operator-config
+  namespace: k6-perf-testing
+  annotations:
+    description: |
+      k6-operator Helm values reference.
+      Install with: helm install k6-operator grafana/k6-operator -f this-file.yaml
+data:
+  helm-values.yaml: |
+    namespace:
+      create: false
+    manager:
+      resources:
+        limits:
+          cpu: 100m
+          memory: 128Mi
+        requests:
+          cpu: 50m
+          memory: 64Mi
+    authProxy:
+      enabled: false

@@ -1,0 +1,61 @@
+# =============================================================================
+# BL-08: DB Connection Pool Saturation
+# Find the exact request rate at which DB pool saturates
+# Priority: P0
+# =============================================================================
+
+id: BL-08
+name: DB Connection Pool Saturation
+category: baseline
+priority: P0
+description: Find exact req/s at which DB pool (25 max) saturates
+
+service: client-oppy-configuration
+
+# Custom executor - ramp through increasing load levels
+customExecutor:
+  type: ramping-arrival-rate
+  startRate: 10
+  timeUnit: 1s
+  preAllocatedVUs: 200
+  stages:
+    - duration: 5m                                   # 10 req/s baseline
+      target: 10
+    - duration: 5m                                   # 25 req/s
+      target: 25
+    - duration: 5m                                   # 50 req/s (design point)
+      target: 50
+    - duration: 5m                                   # 75 req/s
+      target: 75
+    - duration: 5m                                   # 100 req/s
+      target: 100
+    - duration: 5m                                   # 125 req/s
+      target: 125
+    - duration: 5m                                   # Recovery back to 50
+      target: 50
+    - duration: 2m                                   # Ramp down
+      target: 0
+
+trafficMix:
+  listConfigs: 25
+  getConfigById: 25
+  getVersions: 10
+  getPlatforms: 10
+  createConfig: 15
+  updateConfig: 10
+  deleteConfig: 5
+
+slos:
+  latency_get_config_by_id:
+    p50: 50
+    p95: 200
+    p99: 500
+  errors:
+    rate: 0.05                                       # 5% allowed at saturation
+
+passCriteria:
+  - Pool NOT saturated at 50 req/s
+  - Saturation point at exact req/s identified
+  - At saturation - graceful 503 not crash
+  - No connection leak - pool returns to idle within 30s
+  - Per-pod distribution is even

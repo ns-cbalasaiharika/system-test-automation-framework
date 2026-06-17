@@ -1,0 +1,29 @@
+# =============================================================================
+# STAGING ENVIRONMENT
+# Pre-production environment for integration testing
+# Usage: make run SCENARIO=bl01 ENV=staging
+# =============================================================================
+
+name: staging
+description: Staging cluster - mirrors production config but with test data
+
+# In-cluster DNS URLs in 'staging' namespace
+services:
+  client-oppy-configuration: http://client-oppy-configuration.staging.svc:6010
+  client-oppy-steering: http://client-oppy-steering.staging.svc:6020
+  client-oppy-orchestrator: http://client-oppy-orchestrator.staging.svc:6030
+  addonman: http://addonman.staging.svc:8080
+  downloader: http://downloader.staging.svc:8081
+  device-classification: http://device-classification.staging.svc:8082
+
+defaults:
+  tenantId: staging-tenant-001
+  
+  headers:
+    Content-Type: application/json
+    x-netskope-tenantid: staging-tenant-001
+    x-netskope-user-email: k6-perf-test@netskope.com
+  
+  thinkTime:                                         # Production-like delays
+    minMs: 500
+    maxMs: 2000

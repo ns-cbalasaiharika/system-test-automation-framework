@@ -1,0 +1,29 @@
+# =============================================================================
+# MINIKUBE ENVIRONMENT
+# For distributed k6 tests in local Kubernetes cluster
+# Usage: make run-k8s SCENARIO=bl01 ENV=minikube
+# =============================================================================
+
+name: minikube
+description: Local Minikube cluster - k6 runners and SUT in same cluster
+
+# In-cluster DNS URLs - format: http://<service>.<namespace>.svc:<port>
+services:
+  client-oppy-configuration: http://client-oppy-configuration.default.svc:6010
+  client-oppy-steering: http://client-oppy-steering.default.svc:6020
+  client-oppy-orchestrator: http://client-oppy-orchestrator.default.svc:6030
+  addonman: http://addonman.default.svc:8080
+  downloader: http://downloader.default.svc:8081
+  device-classification: http://device-classification.default.svc:8082
+
+defaults:
+  tenantId: "12345"
+  
+  headers:
+    Content-Type: application/json
+    x-netskope-tenantid: "12345"
+    x-netskope-user-email: k6-perf-test@netskope.com
+  
+  thinkTime:                                         # Short think time for dev
+    minMs: 100
+    maxMs: 300

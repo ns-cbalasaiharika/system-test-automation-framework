@@ -1,0 +1,29 @@
+# =============================================================================
+# LOCAL ENVIRONMENT
+# For running tests against services on your dev machine
+# Usage: make run SCENARIO=bl01 ENV=local
+# =============================================================================
+
+name: local
+
+# Service base URLs - scenario's 'service' field references these keys
+services:
+  client-oppy-configuration: http://localhost:6010   # Main config service
+  client-oppy-steering: http://localhost:6020        # Steering service
+  client-oppy-orchestrator: http://localhost:6030    # Orchestrator service
+  addonman: http://localhost:8080                    # Addon management
+  downloader: http://localhost:8081                  # Download service
+  device-classification: http://localhost:8082      # Device classification
+
+# Default values applied to all scenarios in this environment
+defaults:
+  tenantId: "12345"                                  # Override via TENANT_ID env var
+  
+  headers:
+    Content-Type: application/json
+    x-netskope-tenantid: "12345"                     # Must match tenantId
+    x-netskope-user-email: k6-perf-test@netskope.com
+  
+  thinkTime:                                         # Delay between requests
+    minMs: 100                                       # Minimum delay (ms)
+    maxMs: 300                                       # Maximum delay (ms)

@@ -1,0 +1,51 @@
+# =============================================================================
+# BL-07: Bulk Delete Contention
+# Measure impact of bulk deletes on normal traffic
+# Priority: P1
+# =============================================================================
+
+id: BL-07
+name: Bulk Delete Contention
+category: baseline
+priority: P1
+description: Impact of bulk delete on normal traffic - 250 IDs every 60s for 30min
+
+service: client-oppy-configuration
+
+# Bulk delete specific configuration
+bulkDelete:
+  batchSize: 250                                     # Delete 250 configs at once
+  intervalSeconds: 60                                # Every 60 seconds
+  totalBatches: 30                                   # 30 batches over 30 minutes
+
+trafficMix:
+  listConfigs: 25
+  getConfigById: 25
+  getVersions: 10
+  getPlatforms: 10
+  createConfig: 15
+  updateConfig: 10
+  deleteConfig: 5
+
+slos:
+  latency_get_config_by_id:
+    p50: 100
+    p95: 400
+    p99: 1000
+  latency_get_configs:
+    p50: 200
+    p95: 1000
+    p99: 2000
+  latency_bulk_delete:                               # Bulk delete latency
+    p50: 5000
+    p95: 8000
+    p99: 10000
+  errors:
+    rate: 0.001
+
+passCriteria:
+  - Bulk delete < 10s for 250 IDs
+  - Non-bulk p99 spike < 2x baseline during bulk
+  - Throughput dip < 20%
+  - Zero lock wait timeouts
+  - Priority contiguous after each delete

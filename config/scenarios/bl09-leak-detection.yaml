@@ -1,0 +1,57 @@
+# =============================================================================
+# BL-09: Leak Detection (4hr Soak)
+# Long-running test to detect resource leaks
+# Priority: P0
+# Usage: make run SCENARIO=bl09 PROFILE=soak
+# =============================================================================
+
+id: BL-09
+name: Leak Detection (4hr Soak)
+category: baseline
+priority: P0
+description: 4+ hour sustained load to detect goroutine/memory/FD/connection leaks
+
+service: client-oppy-configuration
+
+preferredProfile: soak                               # Use soak profile (4hr)
+
+trafficMix:
+  listConfigs: 25
+  getConfigById: 25
+  getVersions: 10
+  getPlatforms: 10
+  createConfig: 15
+  updateConfig: 10
+  deleteConfig: 5
+
+slos:
+  latency_get_config_by_id:
+    p50: 50
+    p95: 200
+    p99: 500
+  latency_get_configs:
+    p50: 100
+    p95: 500
+    p99: 1000
+  errors:
+    rate: 0.001
+
+# Leak detection specific configuration
+leakDetection:
+  sampleIntervalMinutes: 15                          # Sample every 15 minutes
+  metrics:                                           # Metrics to track for leaks
+    - goroutines
+    - heap_inuse
+    - open_fds
+    - db_pool_active
+    - gc_p99
+  maxSlopePerHour: 0.01                              # Max 1% increase per hour
+
+passCriteria:
+  - Goroutines T+240 within 10% of T+0
+  - Heap oscillating with GC, not rising monotonically
+  - Open FDs T+240 within 5% of T+0
+  - DB pool stable
+  - GC p99 stable
+  - Post-load goroutines return within 5min
+  - No OOMKills in 4hr
