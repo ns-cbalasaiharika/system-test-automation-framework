@@ -1,0 +1,114 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: toxiproxy
+  labels:
+    app: toxiproxy
+    component: fault-injection
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: toxiproxy
+  template:
+    metadata:
+      labels:
+        app: toxiproxy
+        component: fault-injection
+    spec:
+      containers:
+        - name: toxiproxy
+          image: ghcr.io/shopify/toxiproxy:2.7.0
+          ports:
+            - name: api
+              containerPort: 8474
+              protocol: TCP
+            - name: mariadb-rw
+              containerPort: 13306
+              protocol: TCP
+            - name: mariadb-ro
+              containerPort: 13307
+              protocol: TCP
+            - name: kafka
+              containerPort: 19092
+              protocol: TCP
+            - name: user-manager
+              containerPort: 18080
+              protocol: TCP
+            - name: provisioner
+              containerPort: 18081
+              protocol: TCP
+            - name: addonman
+              containerPort: 18082
+              protocol: TCP
+            - name: npa-qdispatcher
+              containerPort: 18083
+              protocol: TCP
+            - name: ris
+              containerPort: 18084
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /version
+              port: 8474
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /version
+              port: 8474
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          volumeMounts:
+            - name: config
+              mountPath: /config
+      volumes:
+        - name: config
+          configMap:
+            name: toxiproxy-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: toxiproxy
+  labels:
+    app: toxiproxy
+spec:
+  type: ClusterIP
+  ports:
+    - name: api
+      port: 8474
+      targetPort: 8474
+    - name: mariadb-rw
+      port: 13306
+      targetPort: 13306
+    - name: mariadb-ro
+      port: 13307
+      targetPort: 13307
+    - name: kafka
+      port: 19092
+      targetPort: 19092
+    - name: user-manager
+      port: 18080
+      targetPort: 18080
+    - name: provisioner
+      port: 18081
+      targetPort: 18081
+    - name: addonman
+      port: 18082
+      targetPort: 18082
+    - name: npa-qdispatcher
+      port: 18083
+      targetPort: 18083
+    - name: ris
+      port: 18084
+      targetPort: 18084
+  selector:
+    app: toxiproxy

@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: toxiproxy-config
+  labels:
+    app: toxiproxy
+data:
+  proxies.json: |
+    [
+      {
+        "name": "mariadb-rw",
+        "listen": "0.0.0.0:13306",
+        "upstream": "mariadb-primary.database.svc.cluster.local:3306",
+        "enabled": true
+      },
+      {
+        "name": "mariadb-ro",
+        "listen": "0.0.0.0:13307",
+        "upstream": "mariadb-readonly.database.svc.cluster.local:3306",
+        "enabled": true
+      },
+      {
+        "name": "kafka",
+        "listen": "0.0.0.0:19092",
+        "upstream": "kafka.kafka.svc.cluster.local:9092",
+        "enabled": true
+      },
+      {
+        "name": "user-manager",
+        "listen": "0.0.0.0:18080",
+        "upstream": "um-api-service.user-manager.svc.cluster.local:8080",
+        "enabled": true
+      },
+      {
+        "name": "provisioner",
+        "listen": "0.0.0.0:18081",
+        "upstream": "provisioner-pycore-oppy.provisioner.svc.cluster.local:8080",
+        "enabled": true
+      },
+      {
+        "name": "addonman",
+        "listen": "0.0.0.0:18082",
+        "upstream": "addonman.addonman.svc.cluster.local:8080",
+        "enabled": true
+      },
+      {
+        "name": "npa-qdispatcher",
+        "listen": "0.0.0.0:18083",
+        "upstream": "npa-qdispatcher.npa.svc.cluster.local:8080",
+        "enabled": true
+      },
+      {
+        "name": "ris",
+        "listen": "0.0.0.0:18084",
+        "upstream": "ris.enrollment.svc.cluster.local:8080",
+        "enabled": true
+      }
+    ]
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: toxiproxy-env-overrides
+  labels:
+    app: toxiproxy
+data:
+  MARIADB_RW_UPSTREAM: "mariadb-primary.database.svc.cluster.local:3306"
+  MARIADB_RO_UPSTREAM: "mariadb-readonly.database.svc.cluster.local:3306"
+  KAFKA_UPSTREAM: "kafka.kafka.svc.cluster.local:9092"
+  USER_MANAGER_UPSTREAM: "um-api-service.user-manager.svc.cluster.local:8080"
+  PROVISIONER_UPSTREAM: "provisioner-pycore-oppy.provisioner.svc.cluster.local:8080"
+  ADDONMAN_UPSTREAM: "addonman.addonman.svc.cluster.local:8080"
+  NPA_QDISPATCHER_UPSTREAM: "npa-qdispatcher.npa.svc.cluster.local:8080"
+  RIS_UPSTREAM: "ris.enrollment.svc.cluster.local:8080"

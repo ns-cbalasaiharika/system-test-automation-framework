@@ -1,0 +1,51 @@
+# =============================================================================
+# BL-05: Multi-Tenant Isolation
+# Verify tenant isolation and noisy neighbor protection with 50 tenants
+# Priority: P0
+# =============================================================================
+
+id: BL-05
+name: Multi-Tenant Isolation
+category: baseline
+priority: P0
+description: 50 tenants under concurrent load - verify isolation and noisy neighbor protection
+
+service: client-oppy-configuration
+
+# Multi-tenant specific configuration
+multiTenant:
+  tenantCount: 50                                    # Number of concurrent tenants
+  vusPerTenant: 1                                    # VUs per tenant
+  hotTenant:                                         # Noisy neighbor simulation
+    id: tenant-1                                     # Which tenant becomes "hot"
+    startAt: 15m                                     # When to start hot phase
+    duration: 10m                                    # How long hot phase lasts
+    multiplier: 10                                   # 10x normal load for hot tenant
+
+trafficMix:
+  listConfigs: 25
+  getConfigById: 25
+  getVersions: 10
+  getPlatforms: 10
+  createConfig: 15
+  updateConfig: 10
+  deleteConfig: 5
+
+slos:
+  latency_get_config_by_id:                          # Relaxed for multi-tenant
+    p50: 100
+    p95: 400
+    p99: 1000
+  latency_get_configs:
+    p50: 200
+    p95: 1000
+    p99: 2000
+  errors:
+    rate: 0.001
+
+passCriteria:
+  - All 50 tenants p95 within 2x of BL-01 single-tenant
+  - Max/min tenant latency ratio < 2x during normal phase
+  - Hot tenant does NOT cause others p95 increase > 20%
+  - Zero cross-tenant data in responses
+  - DB USE switching < 5ms per request

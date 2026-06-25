@@ -1,0 +1,29 @@
+# =============================================================================
+# MINIKUBE-LOCAL ENVIRONMENT
+# For k6 tests run LOCALLY against minikube services via port-forwarding
+# 
+# Usage:
+#   kubectl port-forward -n client-oppy svc/client-oppy-configuration 6010:80 &
+#   k6 run dist/scenarios/.../bl01-golden-baseline.bundle.js --env ENV=minikube-local
+# =============================================================================
+
+name: minikube-local
+description: Local k6 against Minikube via port-forwarding
+
+# Localhost URLs - requires kubectl port-forward to be running
+services:
+  client-oppy-configuration: http://localhost:6010
+  client-oppy-steering: http://localhost:6020
+  client-oppy-orchestrator: http://localhost:6030
+
+defaults:
+  tenantId: "12345"
+  
+  headers:
+    Content-Type: application/json
+    x-netskope-tenantid: "12345"
+    x-netskope-user-email: k6-system-test@netskope.com
+  
+  thinkTime:
+    minMs: 100
+    maxMs: 300

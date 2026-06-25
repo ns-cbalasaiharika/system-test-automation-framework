@@ -1,0 +1,75 @@
+# =============================================================================
+# client-oppy-configuration — Minikube Values
+# Overrides for local development/testing
+# =============================================================================
+
+replicaCount: 1
+
+image:
+  repository: artifactory-rd.netskope.io/nsclient-release-docker/client-oppy-configuration
+  pullPolicy: Never  # Images pre-loaded into minikube
+  tag: "latest"
+
+# Disable Vault injection — use hardcoded secrets for minikube
+vaultInjection:
+  enabled: false
+
+envs:
+  # Go runtime
+  GOMEMLIMIT: "450MiB"
+
+  # Logging — verbose for debugging
+  LOG_LEVEL: "debug"
+
+  # POP name for minikube
+  EPDLP_MP: "minikube"
+
+  # Disable backend notifications (no provisioner in minikube)
+  ENABLE_BACKEND_NOTIFICATIONS: "false"
+
+  # Kafka - Docker host
+  KAFKA_ENABLED: "true"
+  KAFKA_BROKERS: "host.minikube.internal:9092"
+
+  # MariaDB DSN — connecting to Docker host (dev docker-compose)
+  DB_READONLY_DSN: "devuser:devpass@tcp(host.minikube.internal:3307)/core_data?parseTime=true"
+  DB_READWRITE_DSN: "devuser:devpass@tcp(host.minikube.internal:3307)/core_data?parseTime=true"
+
+  # AES encryption keys (hardcoded for minikube testing)
+  AES_KEY: "0123456789abcdef0123456789abcdef"
+  AES_IV: "0123456789abcdef"
+
+  # External services - WireMock on Docker host
+  PROVISIONER_URL: "http://host.minikube.internal:6099"
+  ADDONMAN_URL: "http://host.minikube.internal:6098"
+  NPA_SERVICE_URL: ""
+
+# Reduced resources for minikube
+resources:
+  limits:
+    memory: 512Mi
+    cpu: 1
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Disable ingress (use port-forward or NodePort)
+ingress:
+  enabled: false
+
+# Disable service monitor (no Prometheus operator)
+serviceMonitor:
+  enabled: false
+
+# Pod annotations for local testing
+podAnnotations:
+  observability: client-oppy-configuration
+  prometheus.io/scrape: "false"
+
+# Disable PriorityClass (not available in minikube)
+priorityClassName: ""
+
+# Allow scheduling on any node
+nodeSelector: {}
+tolerations: []
+affinity: {}

@@ -3,18 +3,19 @@ set -euo pipefail
 
 # ─── K6 Performance Test Runner ──────────────────────────────────────────────
 # Config-driven runner that resolves scenario, profile, and environment.
+# Runs webpack-bundled TypeScript scenarios with YAML configs.
 #
 # Usage:
 #   ./scripts/run.sh --scenario bl01 --profile smoke --env local
 #   ./scripts/run.sh --scenario bl01                    # defaults: profile=load, env=local
 #   ./scripts/run.sh --all --profile smoke              # run all scenarios with smoke
 #   ./scripts/run.sh --category baseline --profile smoke
-#   ./scripts/run.sh --priority P0 --profile smoke
+#   ./scripts/run.sh --service client-oppy --profile smoke
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FRAMEWORK_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 CONFIG_DIR="$FRAMEWORK_ROOT/config"
-SCENARIOS_DIR="$FRAMEWORK_ROOT/scenarios"
+DIST_DIR="$FRAMEWORK_ROOT/dist"
 RESULTS_DIR="$FRAMEWORK_ROOT/results"
 
 # ─── Defaults ────────────────────────────────────────────────────────────────
@@ -24,7 +25,9 @@ ENV_NAME="local"
 RUN_ALL=false
 CATEGORY=""
 PRIORITY=""
+SERVICE=""
 K6_EXTRA_ARGS=""
+SKIP_BUNDLE=false
 
 # ─── Colors ──────────────────────────────────────────────────────────────────
 RED='\033[0;31m'
@@ -48,17 +51,21 @@ while [[ $# -gt 0 ]]; do
     --all|-a)        RUN_ALL=true; shift ;;
     --category|-c)   CATEGORY="$2"; shift 2 ;;
     --priority)      PRIORITY="$2"; shift 2 ;;
+    --service)       SERVICE="$2"; shift 2 ;;
     --k6-args)       K6_EXTRA_ARGS="$2"; shift 2 ;;
+    --no-bundle)     SKIP_BUNDLE=true; shift ;;
     --help|-h)
       echo "Usage: $0 [options]"
       echo ""
       echo "Options:"
-      echo "  --scenario, -s <id>    Scenario prefix (e.g., bl01, sf01)"
+      echo "  --scenario, -s <id>    Scenario prefix (e.g., bl01, am-bl01)"
       echo "  --profile, -p <name>   Load profile: smoke|load|stress|soak|spike (default: load)"
-      echo "  --env, -e <name>       Environment: local|staging|production (default: local)"
+      echo "  --env, -e <name>       Environment: local|minikube|rancher|staging (default: local)"
       echo "  --all, -a              Run all discovered scenarios"
       echo "  --category, -c <cat>   Filter by category: baseline|single-fault|..."
+      echo "  --service <name>       Filter by service: client-oppy|addonman|..."
       echo "  --priority <P0|P1|P2>  Filter by priority"
+      echo "  --no-bundle            Skip webpack bundling (use existing dist/)"
       echo "  --k6-args <args>       Additional k6 CLI arguments"
       echo "  --help, -h             Show this help"
       exit 0
@@ -71,18 +78,20 @@ while [[ $# -gt 0 ]]; do
 done
 
 # ─── Validation ──────────────────────────────────────────────────────────────
-if [[ "$RUN_ALL" == "false" && -z "$SCENARIO" && -z "$CATEGORY" && -z "$PRIORITY" ]]; then
-  fail "Specify --scenario, --all, --category, or --priority"
+if [[ "$RUN_ALL" == "false" && -z "$SCENARIO" && -z "$CATEGORY" && -z "$PRIORITY" && -z "$SERVICE" ]]; then
+  fail "Specify --scenario, --all, --category, --service, or --priority"
   exit 1
 fi
 
-if [[ ! -f "$CONFIG_DIR/profiles/$PROFILE.json" ]]; then
-  fail "Profile not found: $CONFIG_DIR/profiles/$PROFILE.json"
+# Validate environment config exists (YAML)
+if [[ ! -f "$CONFIG_DIR/environments/$ENV_NAME.yaml" ]]; then
+  fail "Environment not found: $CONFIG_DIR/environments/$ENV_NAME.yaml"
   exit 1
 fi
 
-if [[ ! -f "$CONFIG_DIR/environments/$ENV_NAME.json" ]]; then
-  fail "Environment not found: $CONFIG_DIR/environments/$ENV_NAME.json"
+# Validate profile config exists (YAML)
+if [[ ! -f "$CONFIG_DIR/profiles/$PROFILE.yaml" ]]; then
+  fail "Profile not found: $CONFIG_DIR/profiles/$PROFILE.yaml"
   exit 1
 fi
 
@@ -90,80 +99,110 @@ command -v k6 >/dev/null 2>&1 || { fail "k6 not installed (brew install k6)"; ex
 
 mkdir -p "$RESULTS_DIR"
 
-# ─── Discover Scenarios ──────────────────────────────────────────────────────
+# ─── Bundle if needed ────────────────────────────────────────────────────────
+ensure_bundle() {
+  if [[ "$SKIP_BUNDLE" == "true" ]]; then
+    return
+  fi
+
+  if [[ ! -d "$DIST_DIR" ]] || [[ -z "$(find "$DIST_DIR" -name '*.bundle.js' 2>/dev/null | head -1)" ]]; then
+    log "No bundles found. Running webpack..."
+    (cd "$FRAMEWORK_ROOT" && npm run bundle) || { fail "Webpack bundling failed"; exit 1; }
+    ok "Bundling complete"
+  fi
+}
+
+# ─── Discover Workload Configs ───────────────────────────────────────────────
 discover_scenarios() {
   local scenarios=()
 
-  for config_file in "$CONFIG_DIR/scenarios"/*.json; do
-    [[ "$(basename "$config_file")" == "_template.json" ]] && continue
+  while IFS= read -r -d '' config_file; do
+    # Skip READMEs
+    [[ "$(basename "$config_file")" == "README.md" ]] && continue
 
-    local id category priority
-    id=$(python3 -c "import json; print(json.load(open('$config_file'))['id'])" 2>/dev/null || echo "")
-    category=$(python3 -c "import json; print(json.load(open('$config_file'))['category'])" 2>/dev/null || echo "")
-    priority=$(python3 -c "import json; print(json.load(open('$config_file'))['priority'])" 2>/dev/null || echo "")
+    local id category priority service_name
+    id=$(python3 -c "import yaml; print(yaml.safe_load(open('$config_file')).get('id',''))" 2>/dev/null || echo "")
+    category=$(python3 -c "import yaml; print(yaml.safe_load(open('$config_file')).get('category',''))" 2>/dev/null || echo "")
+    priority=$(python3 -c "import yaml; print(yaml.safe_load(open('$config_file')).get('priority',''))" 2>/dev/null || echo "")
+    service_name=$(python3 -c "import yaml; print(yaml.safe_load(open('$config_file')).get('service',''))" 2>/dev/null || echo "")
 
+    # Filter by scenario prefix
     if [[ -n "$SCENARIO" ]]; then
       local prefix="${SCENARIO,,}"
-      local file_prefix
-      file_prefix=$(basename "$config_file" .json | cut -d'-' -f1-2 | tr '[:upper:]' '[:lower:]')
-      [[ "$file_prefix" != *"$prefix"* ]] && continue
+      local file_base
+      file_base=$(basename "$config_file" .yaml | tr '[:upper:]' '[:lower:]')
+      [[ "$file_base" != *"$prefix"* ]] && continue
     fi
 
+    # Filter by category
     if [[ -n "$CATEGORY" && "$category" != "$CATEGORY" ]]; then
       continue
     fi
 
+    # Filter by priority
     if [[ -n "$PRIORITY" && "$priority" != "$PRIORITY" ]]; then
       continue
     fi
 
-    scenarios+=("$(basename "$config_file" .json)")
-  done
+    # Filter by service
+    if [[ -n "$SERVICE" && "$service_name" != *"$SERVICE"* ]]; then
+      continue
+    fi
+
+    scenarios+=("$(basename "$config_file" .yaml)")
+  done < <(find "$CONFIG_DIR/workloads" -name '*.yaml' -print0 2>/dev/null)
 
   echo "${scenarios[@]}"
 }
 
-# ─── Resolve Script Path ─────────────────────────────────────────────────────
-resolve_script() {
+# ─── Find Bundle for Scenario ────────────────────────────────────────────────
+find_bundle() {
   local scenario_id="$1"
-  local config_file="$CONFIG_DIR/scenarios/${scenario_id}.json"
 
-  if [[ ! -f "$config_file" ]]; then
-    echo ""
+  # Search dist/ for matching bundle
+  local bundle
+  bundle=$(find "$DIST_DIR" -name "${scenario_id}*.bundle.js" 2>/dev/null | head -1)
+
+  if [[ -n "$bundle" ]]; then
+    echo "$bundle"
     return
   fi
 
-  local category
-  category=$(python3 -c "import json; print(json.load(open('$config_file'))['category'])" 2>/dev/null || echo "")
-
-  local script_path="$SCENARIOS_DIR/$category/$scenario_id.js"
-  if [[ -f "$script_path" ]]; then
-    echo "$script_path"
-  else
-    echo ""
+  # Broader search: try partial match
+  bundle=$(find "$DIST_DIR" -name "*${scenario_id}*.bundle.js" 2>/dev/null | head -1)
+  if [[ -n "$bundle" ]]; then
+    echo "$bundle"
+    return
   fi
+
+  echo ""
 }
 
 # ─── Run Single Scenario ─────────────────────────────────────────────────────
 run_single() {
   local scenario_id="$1"
-  local script_path
-  script_path=$(resolve_script "$scenario_id")
+  local bundle_path
+  bundle_path=$(find_bundle "$scenario_id")
 
-  if [[ -z "$script_path" ]]; then
-    fail "Script not found for scenario: $scenario_id"
+  if [[ -z "$bundle_path" ]]; then
+    fail "Bundle not found for scenario: $scenario_id"
+    warn "Run 'npm run bundle' or 'make bundle' first"
     return 1
   fi
 
-  local config_file="$CONFIG_DIR/scenarios/${scenario_id}.json"
-  local name
-  name=$(python3 -c "import json; print(json.load(open('$config_file'))['name'])" 2>/dev/null || echo "$scenario_id")
+  # Get scenario name from workload config
+  local name="$scenario_id"
+  local config_file
+  config_file=$(find "$CONFIG_DIR/workloads" -name "${scenario_id}.yaml" 2>/dev/null | head -1)
+  if [[ -n "$config_file" ]]; then
+    name=$(python3 -c "import yaml; print(yaml.safe_load(open('$config_file')).get('name','$scenario_id'))" 2>/dev/null || echo "$scenario_id")
+  fi
 
   echo ""
   echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
   log "Scenario: ${BOLD}$name${NC} ($scenario_id)"
   log "Profile:  $PROFILE | Env: $ENV_NAME"
-  log "Script:   $script_path"
+  log "Bundle:   $(basename "$bundle_path")"
   echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
   echo ""
 
@@ -172,7 +211,7 @@ run_single() {
     -e "ENV=$ENV_NAME" \
     -e "PROFILE=$PROFILE" \
     $K6_EXTRA_ARGS \
-    "$script_path" 2>&1 || exit_code=$?
+    "$bundle_path" 2>&1 || exit_code=$?
 
   return $exit_code
 }
@@ -185,6 +224,8 @@ main() {
   echo -e "${BOLD}╚══════════════════════════════════════════════════════════════╝${NC}"
   echo ""
   log "Environment: $ENV_NAME | Profile: $PROFILE"
+
+  ensure_bundle
 
   local scenarios
   scenarios=$(discover_scenarios)

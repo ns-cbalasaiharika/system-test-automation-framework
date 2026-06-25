@@ -1,0 +1,83 @@
+# =============================================================================
+# client-oppy-orchestrator — Minikube Values
+# Overrides for local development/testing
+# =============================================================================
+
+replicaCount: 1
+
+image:
+  repository: artifactory-rd.netskope.io/nsclient-release-docker/client-oppy-orchestrator
+  pullPolicy: Never  # Images pre-loaded into minikube
+  tag: "latest"
+
+# Disable Vault injection — use hardcoded secrets for minikube
+vaultInjection:
+  enabled: false
+
+envs:
+  # Logging — verbose for debugging
+  LOG_LEVEL: "debug"
+
+  # Kafka - Docker host
+  KAFKA_ENABLED: "true"
+  KAFKA_BROKERS: "host.minikube.internal:9092"
+
+  # Message processing
+  MESSAGE_PROCESSING_TIMEOUT: "30"
+
+  # MariaDB DSN - Docker host
+  DB_READONLY_DSN: "devuser:devpass@tcp(host.minikube.internal:3307)/core_data?parseTime=true"
+  DB_READWRITE_DSN: "devuser:devpass@tcp(host.minikube.internal:3307)/core_data?parseTime=true"
+
+  # AES encryption keys (hardcoded for minikube testing)
+  AES_KEY: "0123456789abcdef0123456789abcdef"
+  AES_IV: "0123456789abcdef"
+
+  # Redis - Docker host
+  VALKEY_ADDRS: "host.minikube.internal:6379"
+  VALKEY_DB: "0"
+  VALKEY_TIMEOUT: "5s"
+  VALKEY_POOL_SIZE: "5"
+  VALKEY_PASSWORD: ""
+
+  # Disable external services (no real backends in minikube)
+  ADDONMAN_URL: ""
+  CERT_SERVICE_URL: ""
+  PYCORE_URL: ""
+
+  # Feature flags — disable features that need external services or Kafka
+  FEATURE_CERT_REGENERATION: "false"
+  FEATURE_CACHE_INVALIDATION: "false"
+  FEATURE_CONFIG_PUSH: "false"
+  FEATURE_DLQ_PROCESSING: "false"
+  FEATURE_KAFKA_CONSUMER: "false"
+
+# Reduced resources for minikube
+resources:
+  limits:
+    cpu: 1
+    memory: 1Gi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Disable ingress
+ingress:
+  enabled: false
+
+# Disable service monitor
+serviceMonitor:
+  enabled: false
+
+# Pod annotations
+podAnnotations:
+  observability: client-oppy-orchestrator
+  prometheus.io/scrape: "false"
+
+# Disable PriorityClass (not available in minikube)
+priorityClassName: ""
+
+# Allow scheduling on any node
+nodeSelector: {}
+tolerations: []
+affinity: {}

@@ -1,0 +1,265 @@
+# =============================================================================
+# CLUSTER SERVICES CONFIGURATION
+# Defines all backend services that receive background load during tests
+# =============================================================================
+
+# Service definitions with their API patterns for load generation
+services:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # CLIENT CONFIGURATION SERVICES
+  # ─────────────────────────────────────────────────────────────────────────────
+  client-oppy-configuration:
+    description: Client configuration CRUD service
+    port: 6010
+    healthEndpoint: /api/v1/ready
+    operations:
+      - name: listConfigs
+        method: GET
+        path: /client/config
+        weight: 40
+      - name: getConfigById
+        method: GET
+        path: /client/config/{id}
+        weight: 30
+      - name: createConfig
+        method: POST
+        path: /client/config
+        weight: 15
+      - name: updateConfig
+        method: PATCH
+        path: /client/config/{id}
+        weight: 10
+      - name: deleteConfig
+        method: DELETE
+        path: /client/config/{id}
+        weight: 5
+
+  client-oppy-steering:
+    description: Steering configuration service
+    port: 6020
+    healthEndpoint: /api/v1/ready
+    operations:
+      - name: getDomains
+        method: GET
+        path: /v5/steering/domains
+        weight: 60
+      - name: updateDomain
+        method: POST
+        path: /v5/steering/domains
+        weight: 40
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # API GATEWAY
+  # ─────────────────────────────────────────────────────────────────────────────
+  addonman:
+    description: API Gateway for NS Client communications
+    port: 8080
+    healthEndpoint: /health
+    operations:
+      - name: getBranding
+        method: GET
+        path: /config/user/getbrandingbyupn
+        weight: 30
+      - name: getClientConfig
+        method: GET
+        path: /v2/config/org/clientconfig
+        weight: 30
+      - name: updateClientStatus
+        method: POST
+        path: /v2/update/clientstatus
+        weight: 20
+      - name: getManagedChecks
+        method: GET
+        path: /v2/config/org/getmanagedchecks
+        weight: 20
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # DOWNLOAD SERVICE
+  # ─────────────────────────────────────────────────────────────────────────────
+  downloader:
+    description: Client installer distribution
+    port: 8001
+    healthEndpoint: /health
+    operations:
+      - name: listDownloads
+        method: GET
+        path: /api/v1/downloads
+        weight: 70
+      - name: triggerDownload
+        method: POST
+        path: /api/v1/downloads
+        weight: 30
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # DEVICE CLASSIFICATION
+  # ─────────────────────────────────────────────────────────────────────────────
+  device-classification-config:
+    description: Device classification configuration
+    port: 3001
+    healthEndpoint: /health
+    operations:
+      - name: getConfig
+        method: GET
+        path: /api/v1/config
+        weight: 80
+      - name: updateConfig
+        method: POST
+        path: /api/v1/config
+        weight: 20
+
+  device-classification-evaluator:
+    description: Device classification evaluator
+    port: 3002
+    healthEndpoint: /health
+    operations:
+      - name: classifyDevice
+        method: POST
+        path: /api/v1/classify
+        weight: 70
+      - name: batchClassify
+        method: POST
+        path: /api/v1/classify/batch
+        weight: 30
+
+  device-classification-tag:
+    description: Device tag service
+    port: 3003
+    healthEndpoint: /health
+    operations:
+      - name: getTags
+        method: GET
+        path: /api/v1/tags
+        weight: 60
+      - name: updateTags
+        method: POST
+        path: /api/v1/tags
+        weight: 40
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # PROVISIONER SERVICES
+  # ─────────────────────────────────────────────────────────────────────────────
+  provisioner-core:
+    description: Tenant provisioning and email APIs
+    port: 8889
+    healthEndpoint: /health
+    operations:
+      - name: getTenant
+        method: GET
+        path: /api/v1/tenants/{tenantId}
+        weight: 50
+      - name: getClientConfig
+        method: GET
+        path: /api/v1/tenants/{tenantId}/config
+        weight: 30
+      - name: updateTenantConfig
+        method: PUT
+        path: /api/v1/tenants/{tenantId}/config
+        weight: 20
+
+  provisioner-pycore-branding:
+    description: Client branding service
+    port: 6000
+    healthEndpoint: /health
+    operations:
+      - name: getBrandingByUPN
+        method: GET
+        path: /branding/upn
+        weight: 50
+      - name: getBrandingByEmail
+        method: GET
+        path: /branding/email
+        weight: 50
+
+  provisioner-pycore-client-services:
+    description: Client services
+    port: 6001
+    healthEndpoint: /health
+    operations:
+      - name: getClientConfig
+        method: GET
+        path: /client/config
+        weight: 60
+      - name: updateClientConfig
+        method: POST
+        path: /client/config
+        weight: 40
+
+  provisioner-pycore-client-status:
+    description: Client status updates
+    port: 6003
+    healthEndpoint: /health
+    operations:
+      - name: updateStatus
+        method: POST
+        path: /client/status
+        weight: 100
+
+  provisioner-pycore-support:
+    description: Client support operations
+    port: 6800
+    healthEndpoint: /health
+    operations:
+      - name: getClientSupport
+        method: GET
+        path: /support/client/get
+        weight: 70
+      - name: enableLogging
+        method: POST
+        path: /support/client/logging
+        weight: 30
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # USER MANAGEMENT
+  # ─────────────────────────────────────────────────────────────────────────────
+  user-manager:
+    description: User and group management
+    port: 8090
+    healthEndpoint: /health
+    operations:
+      - name: getUser
+        method: GET
+        path: /api/v1/users/{userId}
+        weight: 40
+      - name: listUsers
+        method: GET
+        path: /api/v1/users
+        weight: 30
+      - name: syncUsers
+        method: POST
+        path: /api/v1/adsync
+        weight: 30
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # ENROLLMENT & CERTIFICATES
+  # ─────────────────────────────────────────────────────────────────────────────
+  enrollment-service:
+    description: Secure client enrollment
+    port: 8091
+    healthEndpoint: /health
+    operations:
+      - name: enroll
+        method: POST
+        path: /api/v1/enroll
+        weight: 60
+      - name: getEnrollmentStatus
+        method: GET
+        path: /api/v1/enroll/{enrollmentId}
+        weight: 40
+
+  cert-service:
+    description: Certificate provisioning
+    port: 8092
+    healthEndpoint: /health
+    operations:
+      - name: getCertificate
+        method: GET
+        path: /api/v1/certificates/{certId}
+        weight: 50
+      - name: requestCertificate
+        method: POST
+        path: /api/v1/certificates
+        weight: 40
+      - name: revokeCertificate
+        method: DELETE
+        path: /api/v1/certificates/{certId}
+        weight: 10

@@ -1,0 +1,80 @@
+# =============================================================================
+# client-oppy-steering — Minikube Values
+# Overrides for local development/testing
+# =============================================================================
+
+replicaCount: 1
+
+image:
+  repository: artifactory-rd.netskope.io/nsclient-release-docker/client-oppy-steering
+  pullPolicy: Never  # Images pre-loaded into minikube
+  tag: "latest"
+
+# Disable Vault injection — use hardcoded secrets for minikube
+vaultInjection:
+  enabled: false
+
+envs:
+  # Logging — verbose for debugging
+  LOG_LEVEL: "debug"
+
+  # Kafka - Docker host
+  KAFKA_BROKERS: "host.minikube.internal:9092"
+  KAFKA_PRODUCER_TIMEOUT_MS: "10000"
+
+  # MariaDB DSN - Docker host
+  DB_READONLY_DSN: "devuser:devpass@tcp(host.minikube.internal:3307)/core_data?parseTime=true"
+  DB_READWRITE_DSN: "devuser:devpass@tcp(host.minikube.internal:3307)/core_data?parseTime=true"
+
+  # Redis - Docker host
+  REDIS_HOST: "host.minikube.internal:6379"
+  REDIS_PASSWORD: ""
+  REDIS_DATABASE: "1"
+  REDIS_POOL_SIZE: "5"
+  REDIS_ENABLE_TLS: "false"
+
+  # HTTP server
+  SERVER_WRITE_TIMEOUT: "120s"
+
+  # Disable external services
+  PROVISIONER_URL: ""
+  NPA_QDISPATCHER_URL: ""
+
+  # Feature flags
+  ENABLE_OPENAPI_DOCS: "true"
+  ENABLE_PPROF: "true"  # Enable for debugging in minikube
+
+# Reduced resources for minikube
+resources:
+  limits:
+    memory: 1Gi
+    cpu: 1
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Disable ingress
+ingress:
+  enabled: false
+
+# Disable service monitor
+serviceMonitor:
+  enabled: false
+
+# Disable external services
+externalServices:
+  npaQDispatcher:
+    enabled: false
+
+# Pod annotations
+podAnnotations:
+  observability: client-oppy-steering
+  prometheus.io/scrape: "false"
+
+# Disable PriorityClass (not available in minikube)
+priorityClassName: ""
+
+# Allow scheduling on any node
+nodeSelector: {}
+tolerations: []
+affinity: {}

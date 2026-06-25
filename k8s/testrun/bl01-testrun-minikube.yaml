@@ -1,0 +1,39 @@
+# BL01 TestRun adapted for Minikube environment
+# 
+# NOTE: The bundled BL01 script requires config files which must be included
+# in the ConfigMap. For simple tests, use a self-contained script instead.
+# See k8s/README.md for example of creating self-contained test scripts.
+apiVersion: k6.io/v1alpha1
+kind: TestRun
+metadata:
+  name: bl01-minikube-test
+  namespace: k6-perf-testing
+  labels:
+    scenario: bl01
+    category: baseline
+    priority: p0
+    profile: smoke
+spec:
+  parallelism: 2
+  script:
+    configMap:
+      name: k6-scenario-bl01
+      file: bl01-golden-baseline.js
+  runner:
+    image: grafana/k6:latest
+    env:
+      - name: ENV
+        value: "minikube"
+      - name: PROFILE
+        value: "smoke"
+      - name: BASE_URL
+        value: "http://client-oppy-configuration.client-oppy.svc.cluster.local:80"
+      - name: TENANT_ID
+        value: "12345"
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+      limits:
+        cpu: "500m"
+        memory: "512Mi"

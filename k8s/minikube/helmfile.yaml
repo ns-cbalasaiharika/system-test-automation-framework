@@ -1,0 +1,78 @@
+# =============================================================================
+# Minikube Client-Oppy Services Deployment
+# Deploys client-oppy services to minikube (infrastructure via docker-compose)
+#
+# Helm Charts: https://github.com/netSkope/client-oppy/tree/develop/helm
+# Infrastructure: https://github.com/netSkope/client-oppy/tree/develop/docker/dev
+#
+# Prerequisites:
+#   1. Clone client-oppy repo and set CLIENT_OPPY_PATH:
+#      git clone https://github.com/netSkope/client-oppy.git
+#      export CLIENT_OPPY_PATH=/path/to/client-oppy
+#
+#   2. Start infrastructure:
+#      cd $CLIENT_OPPY_PATH/docker/dev && docker-compose up -d
+#
+#   3. Start minikube and load images:
+#      minikube start --driver=docker --cni=bridge --cpus=4 --memory=8192
+#      docker pull --platform linux/amd64 artifactory-rd.netskope.io/nsclient-release-docker/client-oppy-configuration:latest
+#      docker pull --platform linux/amd64 artifactory-rd.netskope.io/nsclient-release-docker/client-oppy-orchestrator:latest
+#      docker pull --platform linux/amd64 artifactory-rd.netskope.io/nsclient-release-docker/client-oppy-steering:latest
+#      minikube image load <each-image>
+#
+# Usage:
+#   cd k8s/minikube
+#   CLIENT_OPPY_PATH=/path/to/client-oppy helmfile sync
+# =============================================================================
+
+repositories:
+  - name: grafana
+    url: https://grafana.github.io/helm-charts
+
+helmDefaults:
+  wait: true
+  timeout: 300
+  createNamespace: true
+
+releases:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # CLIENT-OPPY SERVICES (tier=app)
+  # Connect to infrastructure running in Docker (host.minikube.internal)
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: client-oppy-configuration
+    namespace: client-oppy
+    chart: '{{ requiredEnv "CLIENT_OPPY_PATH" }}/helm/client-oppy-configuration'
+    labels:
+      tier: app
+    values:
+      - client-oppy-configuration-values.yaml
+
+  - name: client-oppy-orchestrator
+    namespace: client-oppy
+    chart: '{{ requiredEnv "CLIENT_OPPY_PATH" }}/helm/client-oppy-orchestrator'
+    labels:
+      tier: app
+    values:
+      - client-oppy-orchestrator-values.yaml
+
+  - name: client-oppy-steering
+    namespace: client-oppy
+    chart: '{{ requiredEnv "CLIENT_OPPY_PATH" }}/helm/client-oppy-steering'
+    labels:
+      tier: app
+    values:
+      - client-oppy-steering-values.yaml
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # K6 OPERATOR (tier=k6) - Optional, for running k6 tests inside cluster
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: k6-operator
+    namespace: k6-operator-system
+    chart: grafana/k6-operator
+    installed: true
+    labels:
+      tier: k6
+    values:
+      - k6-operator-values.yaml

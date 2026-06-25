@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: toxiproxy-config
+  labels:
+    app: toxiproxy
+data:
+  proxies.json: |
+    [
+      {
+        "name": "mariadb",
+        "listen": "0.0.0.0:13306",
+        "upstream": "host.minikube.internal:3306",
+        "enabled": true
+      },
+      {
+        "name": "kafka",
+        "listen": "0.0.0.0:19092",
+        "upstream": "host.minikube.internal:9092",
+        "enabled": true
+      },
+      {
+        "name": "redis",
+        "listen": "0.0.0.0:16379",
+        "upstream": "host.minikube.internal:6379",
+        "enabled": true
+      },
+      {
+        "name": "configuration-service",
+        "listen": "0.0.0.0:16010",
+        "upstream": "client-oppy-configuration.client-oppy.svc.cluster.local:80",
+        "enabled": true
+      },
+      {
+        "name": "orchestrator-service",
+        "listen": "0.0.0.0:16030",
+        "upstream": "client-oppy-orchestrator.client-oppy.svc.cluster.local:80",
+        "enabled": true
+      },
+      {
+        "name": "steering-service",
+        "listen": "0.0.0.0:16020",
+        "upstream": "client-oppy-steering.client-oppy.svc.cluster.local:80",
+        "enabled": true
+      }
+    ]

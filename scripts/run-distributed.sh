@@ -109,14 +109,28 @@ kubectl create configmap "$CM_NAME" \
   --namespace="$NAMESPACE" \
   --dry-run=client -o yaml | kubectl apply -f -
 
-# ─── Create ConfigMap for config files ───────────────────────────────────────
+# ─── Create ConfigMaps for config files ──────────────────────────────────────
 CM_CONFIG_NAME="k6-config-${SCENARIO}"
 log "Creating config ConfigMap $CM_CONFIG_NAME..."
+
+# Flatten workload YAML files for ConfigMap (k8s doesn't support nested dirs)
+WORKLOADS_TMPDIR=$(mktemp -d)
+find "$FRAMEWORK_ROOT/config/workloads" -name '*.yaml' -exec cp {} "$WORKLOADS_TMPDIR/" \;
+
 kubectl create configmap "$CM_CONFIG_NAME" \
   --from-file="$FRAMEWORK_ROOT/config/environments/" \
   --from-file="$FRAMEWORK_ROOT/config/profiles/" \
   --namespace="$NAMESPACE" \
   --dry-run=client -o yaml | kubectl apply -f -
+
+CM_WORKLOADS_NAME="k6-workloads-${SCENARIO}"
+log "Creating workloads ConfigMap $CM_WORKLOADS_NAME..."
+kubectl create configmap "$CM_WORKLOADS_NAME" \
+  --from-file="$WORKLOADS_TMPDIR/" \
+  --namespace="$NAMESPACE" \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+rm -rf "$WORKLOADS_TMPDIR"
 
 # ─── Build env vars section ──────────────────────────────────────────────────
 ENV_VARS="      - name: ENV
@@ -201,6 +215,6 @@ kubectl logs -l k6_cr="$TESTRUN_NAME" -n "$NAMESPACE" --tail=50 2>/dev/null || t
 if [[ "$CLEANUP" == "true" ]]; then
   log "Cleaning up TestRun $TESTRUN_NAME..."
   kubectl delete testrun "$TESTRUN_NAME" --namespace="$NAMESPACE"
-  kubectl delete configmap "$CM_NAME" "$CM_CONFIG_NAME" --namespace="$NAMESPACE" 2>/dev/null || true
+  kubectl delete configmap "$CM_NAME" "$CM_CONFIG_NAME" "$CM_WORKLOADS_NAME" --namespace="$NAMESPACE" 2>/dev/null || true
   ok "Cleaned up"
 fi

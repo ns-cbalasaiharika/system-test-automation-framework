@@ -1,29 +1,81 @@
 # =============================================================================
-# RANCHER ENVIRONMENT
-# Dedicated performance testing cluster
-# Usage: make run-k8s SCENARIO=bl01 ENV=rancher
+# RANCHER PERFORMANCE CLUSTER ENVIRONMENT
+# Production-like performance testing cluster
 # =============================================================================
 
 name: rancher
-description: Dedicated Rancher perf cluster - k6 runners target perf namespace
+description: Rancher performance cluster for load testing
 
-# In-cluster DNS URLs in 'perf' namespace
+# ─────────────────────────────────────────────────────────────────────────────
+# SERVICE ENDPOINTS
+# In-cluster DNS URLs: http://<service>.<namespace>.svc.cluster.local:<port>
+# ─────────────────────────────────────────────────────────────────────────────
 services:
-  client-oppy-configuration: http://client-oppy-configuration.perf.svc:6010
-  client-oppy-steering: http://client-oppy-steering.perf.svc:6020
-  client-oppy-orchestrator: http://client-oppy-orchestrator.perf.svc:6030
-  addonman: http://addonman.perf.svc:8080
-  downloader: http://downloader.perf.svc:8081
-  device-classification: http://device-classification.perf.svc:8082
+  # Client Configuration Services
+  client-oppy-configuration: http://client-oppy-configuration.provisioner.svc.cluster.local:6010
+  client-oppy-steering: http://client-oppy-steering.provisioner.svc.cluster.local:6020
+  client-oppy-orchestrator: http://client-oppy-orchestrator.provisioner.svc.cluster.local:6030
+  
+  # API Gateway
+  addonman: http://addonman.provisioner.svc.cluster.local:8080
+  
+  # Download Service
+  downloader: http://downloader.provisioner.svc.cluster.local:8001
+  
+  # Device Classification
+  device-classification-config: http://device-classification-config.provisioner.svc.cluster.local:3001
+  device-classification-evaluator: http://device-classification-evaluator.provisioner.svc.cluster.local:3002
+  device-classification-tag: http://device-classification-tag.provisioner.svc.cluster.local:3003
+  
+  # Provisioner Services
+  provisioner-core: http://provisioner-core.provisioner.svc.cluster.local:8889
+  provisioner-pycore-branding: http://provisioner-pycore.provisioner.svc.cluster.local:6000
+  provisioner-pycore-client-services: http://provisioner-pycore.provisioner.svc.cluster.local:6001
+  provisioner-pycore-client-status: http://provisioner-pycore.provisioner.svc.cluster.local:6003
+  provisioner-pycore-support: http://provisioner-pycore.provisioner.svc.cluster.local:6800
+  
+  # User Management
+  user-manager: http://userinfodist.provisioner.svc.cluster.local:8090
+  
+  # Enrollment & Certificates
+  enrollment-service: http://enrollment-service.provisioner.svc.cluster.local:8091
+  cert-service: http://cert-service.provisioner.svc.cluster.local:8092
 
+# ─────────────────────────────────────────────────────────────────────────────
+# DEFAULT SETTINGS
+# ─────────────────────────────────────────────────────────────────────────────
 defaults:
-  tenantId: perf-tenant-001                          # Dedicated perf tenant
+  tenantId: "perf-test-tenant-001"
   
   headers:
     Content-Type: application/json
-    x-netskope-tenantid: perf-tenant-001
+    x-netskope-tenantid: "perf-test-tenant-001"
     x-netskope-user-email: k6-perf-test@netskope.com
+    x-request-source: k6-perf-framework
   
-  thinkTime:                                         # Realistic think times
-    minMs: 500                                       # Longer delays for prod-like
-    maxMs: 2000
+  thinkTime:
+    minMs: 50                              # Faster for perf cluster
+    maxMs: 150
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CLUSTER-SPECIFIC SETTINGS
+# ─────────────────────────────────────────────────────────────────────────────
+cluster:
+  namespace: provisioner                   # K8s namespace for services
+  k6Namespace: k6-perf-testing            # K8s namespace for k6 runners
+  
+  # Resource limits for k6 runners
+  k6Runner:
+    requests:
+      cpu: "500m"
+      memory: "512Mi"
+    limits:
+      cpu: "2000m"
+      memory: "2Gi"
+  
+  # Parallelism settings
+  maxParallelism: 20                       # Max k6 runner pods
+  
+  # Monitoring
+  prometheusUrl: http://prometheus.monitoring.svc.cluster.local:9090
+  grafanaUrl: http://grafana.monitoring.svc.cluster.local:3000

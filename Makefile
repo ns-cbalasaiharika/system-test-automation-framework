@@ -98,8 +98,8 @@ clean: ## Remove local results and dist
 
 .PHONY: lint
 lint: ## Validate config YAML files
-	@echo "Validating scenario configs..."
-	@for f in config/scenarios/*.yaml; do \
+	@echo "Validating workload configs..."
+	@find config/workloads -name '*.yaml' | while read f; do \
 		python3 -c "import yaml; d=yaml.safe_load(open('$$f')); assert 'id' in d, 'missing id'; assert 'category' in d, 'missing category'; assert 'trafficMix' in d, 'missing trafficMix'; assert 'slos' in d, 'missing slos'" 2>&1 && \
 		echo "  ✓ $$f" || echo "  ✗ $$f"; \
 	done
@@ -118,11 +118,10 @@ lint: ## Validate config YAML files
 .PHONY: list
 list: ## List available scenarios
 	@echo "Available scenarios:"
-	@for f in config/scenarios/*.json; do \
-		[[ "$$(basename $$f)" == "_template.json" ]] && continue; \
-		id=$$(python3 -c "import json; print(json.load(open('$$f'))['id'])" 2>/dev/null); \
-		name=$$(python3 -c "import json; print(json.load(open('$$f'))['name'])" 2>/dev/null); \
-		prio=$$(python3 -c "import json; print(json.load(open('$$f'))['priority'])" 2>/dev/null); \
+	@find config/workloads -name '*.yaml' ! -name 'README.md' | sort | while read f; do \
+		id=$$(python3 -c "import yaml; print(yaml.safe_load(open('$$f')).get('id','?'))" 2>/dev/null); \
+		name=$$(python3 -c "import yaml; print(yaml.safe_load(open('$$f')).get('name','?'))" 2>/dev/null); \
+		prio=$$(python3 -c "import yaml; print(yaml.safe_load(open('$$f')).get('priority','?'))" 2>/dev/null); \
 		printf "  \033[36m%-8s\033[0m [%s] %s\n" "$$id" "$$prio" "$$name"; \
 	done
 

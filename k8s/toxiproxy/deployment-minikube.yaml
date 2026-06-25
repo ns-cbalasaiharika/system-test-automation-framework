@@ -1,0 +1,105 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: toxiproxy
+  labels:
+    app: toxiproxy
+    component: fault-injection
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: toxiproxy
+  template:
+    metadata:
+      labels:
+        app: toxiproxy
+        component: fault-injection
+    spec:
+      containers:
+        - name: toxiproxy
+          image: ghcr.io/shopify/toxiproxy:2.7.0
+          args:
+            - "-config"
+            - "/config/proxies.json"
+          ports:
+            - name: api
+              containerPort: 8474
+              protocol: TCP
+            - name: mariadb
+              containerPort: 13306
+              protocol: TCP
+            - name: kafka
+              containerPort: 19092
+              protocol: TCP
+            - name: redis
+              containerPort: 16379
+              protocol: TCP
+            - name: configuration
+              containerPort: 16010
+              protocol: TCP
+            - name: orchestrator
+              containerPort: 16030
+              protocol: TCP
+            - name: steering
+              containerPort: 16020
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /version
+              port: 8474
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /version
+              port: 8474
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          volumeMounts:
+            - name: config
+              mountPath: /config
+      volumes:
+        - name: config
+          configMap:
+            name: toxiproxy-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: toxiproxy
+  labels:
+    app: toxiproxy
+spec:
+  type: ClusterIP
+  ports:
+    - name: api
+      port: 8474
+      targetPort: 8474
+    - name: mariadb
+      port: 13306
+      targetPort: 13306
+    - name: kafka
+      port: 19092
+      targetPort: 19092
+    - name: redis
+      port: 16379
+      targetPort: 16379
+    - name: configuration
+      port: 16010
+      targetPort: 16010
+    - name: orchestrator
+      port: 16030
+      targetPort: 16030
+    - name: steering
+      port: 16020
+      targetPort: 16020
+  selector:
+    app: toxiproxy

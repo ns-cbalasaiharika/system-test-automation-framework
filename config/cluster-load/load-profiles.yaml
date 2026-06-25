@@ -1,0 +1,185 @@
+# =============================================================================
+# CLUSTER LOAD PROFILES
+# Defines cluster-wide load levels for different testing scenarios
+# =============================================================================
+
+# Each profile defines:
+# - baseRPS: Base requests per second per service
+# - multipliers: Per-service multipliers based on production traffic patterns
+# - duration: How long to maintain the load (0 = indefinite until stopped)
+# - rampUp: Time to reach target load
+# - rampDown: Time to gracefully stop load
+
+profiles:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # IDLE - Minimal background activity
+  # Use for baseline measurements with almost no cluster load
+  # ─────────────────────────────────────────────────────────────────────────────
+  idle:
+    description: Minimal cluster activity for baseline measurements
+    baseRPS: 1
+    duration: 0                          # Run until stopped
+    rampUp: 10s
+    rampDown: 10s
+    serviceMultipliers:
+      client-oppy-configuration: 1
+      addonman: 1
+      provisioner-pycore-client-status: 2
+      # All other services: 1 (default)
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # LIGHT - Light production-like load
+  # Use for development testing and quick validations
+  # ─────────────────────────────────────────────────────────────────────────────
+  light:
+    description: Light production-like load for quick testing
+    baseRPS: 10
+    duration: 0
+    rampUp: 30s
+    rampDown: 30s
+    serviceMultipliers:
+      client-oppy-configuration: 2       # Higher config traffic
+      addonman: 3                         # API gateway sees more traffic
+      provisioner-pycore-client-status: 5 # Many status updates
+      device-classification-evaluator: 2
+      downloader: 1
+      user-manager: 1
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # P50 - Median production load
+  # Represents typical daily traffic patterns
+  # ─────────────────────────────────────────────────────────────────────────────
+  p50:
+    description: Median (50th percentile) production traffic
+    baseRPS: 50
+    duration: 0
+    rampUp: 2m
+    rampDown: 1m
+    serviceMultipliers:
+      client-oppy-configuration: 2
+      client-oppy-steering: 1.5
+      addonman: 5                         # Primary entry point
+      provisioner-pycore-branding: 3
+      provisioner-pycore-client-status: 10 # High volume
+      provisioner-pycore-client-services: 3
+      device-classification-evaluator: 4
+      device-classification-config: 1
+      downloader: 2
+      user-manager: 2
+      enrollment-service: 1
+      cert-service: 1
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # P95 - 95th percentile production load
+  # Represents peak daily traffic (busy hours)
+  # ─────────────────────────────────────────────────────────────────────────────
+  p95:
+    description: 95th percentile production traffic (peak hours)
+    baseRPS: 100
+    duration: 0
+    rampUp: 3m
+    rampDown: 2m
+    serviceMultipliers:
+      client-oppy-configuration: 3
+      client-oppy-steering: 2
+      addonman: 8                         # Heavy API gateway traffic
+      provisioner-pycore-branding: 5
+      provisioner-pycore-client-status: 20 # Very high volume
+      provisioner-pycore-client-services: 5
+      provisioner-pycore-support: 2
+      device-classification-evaluator: 8
+      device-classification-config: 2
+      device-classification-tag: 3
+      downloader: 4
+      user-manager: 4
+      enrollment-service: 2
+      cert-service: 2
+      provisioner-core: 3
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # P99 - 99th percentile production load
+  # Represents extreme peak traffic (special events, incidents)
+  # ─────────────────────────────────────────────────────────────────────────────
+  p99:
+    description: 99th percentile production traffic (extreme peaks)
+    baseRPS: 150
+    duration: 0
+    rampUp: 5m
+    rampDown: 3m
+    serviceMultipliers:
+      client-oppy-configuration: 5
+      client-oppy-steering: 3
+      addonman: 12
+      provisioner-pycore-branding: 8
+      provisioner-pycore-client-status: 30
+      provisioner-pycore-client-services: 8
+      provisioner-pycore-support: 4
+      device-classification-evaluator: 12
+      device-classification-config: 3
+      device-classification-tag: 5
+      downloader: 6
+      user-manager: 6
+      enrollment-service: 4
+      cert-service: 3
+      provisioner-core: 5
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # STRESS - Beyond production capacity
+  # Use to find breaking points and measure degradation
+  # ─────────────────────────────────────────────────────────────────────────────
+  stress:
+    description: Stress test - 150% of max production traffic
+    baseRPS: 200
+    duration: 0
+    rampUp: 5m
+    rampDown: 3m
+    serviceMultipliers:
+      client-oppy-configuration: 8
+      client-oppy-steering: 5
+      addonman: 20
+      provisioner-pycore-branding: 12
+      provisioner-pycore-client-status: 50
+      provisioner-pycore-client-services: 12
+      provisioner-pycore-support: 6
+      device-classification-evaluator: 20
+      device-classification-config: 5
+      device-classification-tag: 8
+      downloader: 10
+      user-manager: 10
+      enrollment-service: 6
+      cert-service: 5
+      provisioner-core: 8
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # SOAK - Sustained load for leak detection
+  # Run for extended periods to detect memory leaks, connection leaks
+  # ─────────────────────────────────────────────────────────────────────────────
+  soak:
+    description: Sustained p95 load for memory/connection leak detection
+    baseRPS: 100
+    duration: 4h                          # 4 hour soak test
+    rampUp: 5m
+    rampDown: 5m
+    serviceMultipliers:
+      client-oppy-configuration: 3
+      client-oppy-steering: 2
+      addonman: 8
+      provisioner-pycore-branding: 5
+      provisioner-pycore-client-status: 20
+      provisioner-pycore-client-services: 5
+      device-classification-evaluator: 8
+      downloader: 4
+      user-manager: 4
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CUSTOM PROFILE TEMPLATE
+# Copy this to create custom profiles for specific test scenarios
+# ─────────────────────────────────────────────────────────────────────────────
+# custom:
+#   description: Custom profile for specific scenario
+#   baseRPS: 75
+#   duration: 30m
+#   rampUp: 2m
+#   rampDown: 1m
+#   serviceMultipliers:
+#     service-name: multiplier

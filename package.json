@@ -1,20 +1,35 @@
 {
   "name": "system-test-automation-framework",
-  "version": "1.0.0",
-  "description": "Config-driven k6 performance testing framework for system testing",
+  "version": "2.0.0",
+  "description": "Config-driven k6 performance testing framework for system testing - TypeScript edition",
   "type": "module",
   "scripts": {
-    "bundle": "webpack --config webpack.config.js",
-    "bundle:watch": "webpack --config webpack.config.js --watch",
-    "bundle:all": "node scripts/bundle-all.js",
+    "build": "tsc --noEmit",
+    "bundle": "webpack --config webpack.config.ts",
+    "bundle:watch": "webpack --config webpack.config.ts --watch",
+    "bundle:all": "ts-node --esm scripts/bundle-all.ts",
     "lint": "make lint",
-    "test": "make run-smoke SCENARIO=bl01"
+    "lint:ts": "eslint 'lib/**/*.ts' 'operations/**/*.ts' 'helpers/**/*.ts' 'scenarios/**/*.ts'",
+    "typecheck": "tsc --noEmit",
+    "test": "make run-smoke SCENARIO=bl01",
+    "validate": "ts-node scripts/validate-config.ts",
+    "generate": "ts-node scripts/generate-scenario.ts",
+    "generate:help": "ts-node scripts/generate-scenario.ts --help"
   },
   "devDependencies": {
+    "@types/k6": "^0.54.2",
+    "@types/node": "^20.14.0",
+    "@typescript-eslint/eslint-plugin": "^7.13.0",
+    "@typescript-eslint/parser": "^7.13.0",
+    "copy-webpack-plugin": "^12.0.2",
+    "eslint": "^8.57.0",
+    "glob": "^10.3.12",
+    "ts-loader": "^9.5.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5",
     "webpack": "^5.91.0",
     "webpack-cli": "^5.1.4",
-    "copy-webpack-plugin": "^12.0.2",
-    "glob": "^10.3.12"
+    "yaml": "^2.4.0"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -24,7 +39,8 @@
     "performance",
     "testing",
     "load-testing",
-    "system-testing"
+    "system-testing",
+    "typescript"
   ],
   "license": "MIT"
 }

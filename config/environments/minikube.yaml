@@ -1,20 +1,31 @@
 # =============================================================================
 # MINIKUBE ENVIRONMENT
-# For distributed k6 tests in local Kubernetes cluster
-# Usage: make run-k8s SCENARIO=bl01 ENV=minikube
+# For k6 tests against real client-oppy services in local Kubernetes cluster
+# 
+# Usage:
+#   make run-smoke SCENARIO=bl01 ENV=minikube    # Local k6 with port-forward
+#   make run-k8s SCENARIO=bl01 ENV=minikube      # Distributed via k6-operator
+#
+# Setup:
+#   ./scripts/minikube-quickstart.sh --deploy-only
 # =============================================================================
 
 name: minikube
-description: Local Minikube cluster - k6 runners and SUT in same cluster
+description: Local Minikube cluster with real client-oppy services
 
-# In-cluster DNS URLs - format: http://<service>.<namespace>.svc:<port>
+# In-cluster DNS URLs - format: http://<service>.<namespace>.svc.cluster.local:<port>
+# Used by k6-operator pods running inside the cluster
 services:
-  client-oppy-configuration: http://client-oppy-configuration.default.svc:6010
-  client-oppy-steering: http://client-oppy-steering.default.svc:6020
-  client-oppy-orchestrator: http://client-oppy-orchestrator.default.svc:6030
-  addonman: http://addonman.default.svc:8080
-  downloader: http://downloader.default.svc:8081
-  device-classification: http://device-classification.default.svc:8082
+  client-oppy-configuration: http://client-oppy-configuration.client-oppy.svc.cluster.local:6010
+  client-oppy-steering: http://client-oppy-steering.client-oppy.svc.cluster.local:6020
+  client-oppy-orchestrator: http://client-oppy-orchestrator.client-oppy.svc.cluster.local:6030
+
+# Infrastructure services (for verification scripts)
+infrastructure:
+  mariadb: mariadb.client-oppy.svc.cluster.local:3306
+  kafka: kafka.client-oppy.svc.cluster.local:9092
+  redis: redis-master.client-oppy.svc.cluster.local:6379
+  toxiproxy: toxiproxy.client-oppy.svc.cluster.local:8474
 
 defaults:
   tenantId: "12345"
@@ -22,8 +33,14 @@ defaults:
   headers:
     Content-Type: application/json
     x-netskope-tenantid: "12345"
-    x-netskope-user-email: k6-perf-test@netskope.com
+    x-netskope-user-email: k6-system-test@netskope.com
   
-  thinkTime:                                         # Short think time for dev
+  thinkTime:
     minMs: 100
     maxMs: 300
+
+# Database credentials (for verification scripts)
+database:
+  username: client_oppy_user
+  password: client_oppy_password
+  database: client_oppy_db

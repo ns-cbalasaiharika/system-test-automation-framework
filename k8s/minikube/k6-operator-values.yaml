@@ -1,0 +1,8 @@
+# =============================================================================
+# k6-operator — Minikube Values
+# Manages distributed k6 test runs via TestRun CRD
+# Docs: https://grafana.com/docs/k6/latest/testing-guides/running-distributed-tests/
+# =============================================================================
+
+# Use default settings - k6-operator is lightweight
+# Customize only if needed for your environment
