@@ -39,14 +39,52 @@ services:
     port: 6020
     healthEndpoint: /api/v1/ready
     operations:
-      - name: getDomains
+      - name: listSteeringConfigs
         method: GET
-        path: /v5/steering/domains
-        weight: 60
-      - name: updateDomain
+        path: /config
+        weight: 30
+      - name: getSteeringConfigById
+        method: GET
+        path: /config/{id}
+        weight: 25
+      - name: createSteeringConfig
         method: POST
-        path: /v5/steering/domains
-        weight: 40
+        path: /config
+        weight: 15
+      - name: updateSteeringConfig
+        method: PUT
+        path: /config/{id}
+        weight: 10
+      - name: deleteSteeringConfig
+        method: DELETE
+        path: /config/{id}
+        weight: 5
+      - name: getBypassLogging
+        method: GET
+        path: /settings/bypasslogging
+        weight: 10
+      - name: getStatus
+        method: GET
+        path: /api/v1/status
+        weight: 5
+
+  client-oppy-orchestrator:
+    description: Event orchestration service (Kafka consumer + REST API)
+    port: 6030
+    healthEndpoint: /api/v1/ready
+    operations:
+      - name: getHealth
+        method: GET
+        path: /api/v1/ready
+        weight: 50
+      - name: getStatus
+        method: GET
+        path: /api/v1/status
+        weight: 30
+      - name: getMetrics
+        method: GET
+        path: /metrics
+        weight: 20
 
   # ─────────────────────────────────────────────────────────────────────────────
   # API GATEWAY

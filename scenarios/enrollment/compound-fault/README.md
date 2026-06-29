@@ -9,4 +9,4 @@ Compound fault injection scenarios for Enrollment services.
 
 ## Reference
 
-- Config: `config/workloads/enrollment/en-cf*.yaml`
+- Config: `config/scenarios/enrollment/en-cf*.yaml`

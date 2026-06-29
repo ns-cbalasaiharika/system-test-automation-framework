@@ -9,4 +9,4 @@ Compound fault injection scenarios for Downloader service.
 
 ## Reference
 
-- Config: `config/workloads/downloader/dl-cf*.yaml`
+- Config: `config/scenarios/downloader/dl-cf*.yaml`

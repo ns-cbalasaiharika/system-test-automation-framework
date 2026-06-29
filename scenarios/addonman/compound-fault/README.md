@@ -21,4 +21,4 @@ Scenarios that inject multiple concurrent faults to test system resilience.
 ## Reference
 
 - See `scenarios/client-oppy/compound-fault/` for examples
-- Config: `config/workloads/addonman/am-cf*.yaml`
+- Config: `config/scenarios/addonman/am-cf*.yaml`

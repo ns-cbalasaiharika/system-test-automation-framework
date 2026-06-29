@@ -9,4 +9,4 @@ Data integrity scenarios for Provisioner services.
 
 ## Reference
 
-- Config: `config/workloads/provisioner/pv-di*.yaml`
+- Config: `config/scenarios/provisioner/pv-di*.yaml`

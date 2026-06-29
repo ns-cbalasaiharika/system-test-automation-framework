@@ -17,4 +17,4 @@ Baseline performance scenarios for Enrollment and Certificate services.
 
 ## Reference
 
-- Config: `config/workloads/enrollment/en-bl*.yaml`
+- Config: `config/scenarios/enrollment/en-bl*.yaml`

@@ -1,185 +1,457 @@
 # =============================================================================
 # CLUSTER LOAD PROFILES
-# Defines cluster-wide load levels for different testing scenarios
+# =============================================================================
+#
+# SOURCES:
+#   - Pod limits: CPU 1 req / 4 limit, Mem 1G req / 4G limit
+#   - Alert thresholds: CPU < 80%, Mem < 85% (pycore reference)
+#   - Latency SLOs: ≤150ms mean, <200ms P90 (pycore reference, oppy-support Phase 1)
+#   - DB pool: oppy-support uses 50 RO / 30 RW (config/steering TBD)
+#   - RPS baseline: ~425 req/s per POP (heartbeat traffic)
+#
+# GAPS (blocked by ENG-942459 - serviceMonitor re-enablement):
+#   - Production RPS per service (configuration/steering/orchestrator)
+#   - Current production baselines (CPU, memory, DB connections under load)
+#   - GOMEMLIMIT not configured
+#
+# TODO: Update after ENG-942459 completes and production metrics are available
 # =============================================================================
 
-# Each profile defines:
-# - baseRPS: Base requests per second per service
-# - multipliers: Per-service multipliers based on production traffic patterns
-# - duration: How long to maintain the load (0 = indefinite until stopped)
-# - rampUp: Time to reach target load
-# - rampDown: Time to gracefully stop load
+# -----------------------------------------------------------------------------
+# RESOURCE LIMITS (from Helm values)
+# -----------------------------------------------------------------------------
+# These are the pod resource configurations - used to calculate thresholds
+resourceLimits:
+  cpu:
+    request: 1          # 1 core requested
+    limit: 4            # 4 cores max
+  memory:
+    request: 1Gi        # 1GB requested  
+    limit: 4Gi          # 4GB max
+    # GOMEMLIMIT: not set (TODO: recommend setting to ~3.2Gi = 80% of limit)
+  dbPool:
+    # oppy-support reference: 50 RO / 30 RW
+    # config/steering: TODO - verify from Helm values or code
+    readOnly: 50        # Assumed same as oppy-support
+    readWrite: 30       # Assumed same as oppy-support
+
+# -----------------------------------------------------------------------------
+# ALERT THRESHOLDS (from pycore reference - no client-oppy specific alerts yet)
+# -----------------------------------------------------------------------------
+alertThresholds:
+  cpu:
+    warn: 70            # Warning before hitting 80% alert
+    critical: 80        # Current pycore reference threshold
+  memory:
+    warn: 75            # Warning before hitting 85% alert
+    critical: 85        # Current pycore reference threshold
+  latency:
+    meanTarget: 150     # ≤150ms mean (oppy-support Phase 1 gate)
+    p90Target: 200      # <200ms P90 (pycore reference)
+    p95Target: 300      # Derived: typically 1.5x of P90
+    p99Target: 1000     # Derived: typically 5x of P90
+
+# =============================================================================
+# LOAD PROFILES
+# =============================================================================
 
 profiles:
-  # ─────────────────────────────────────────────────────────────────────────────
-  # IDLE - Minimal background activity
-  # Use for baseline measurements with almost no cluster load
-  # ─────────────────────────────────────────────────────────────────────────────
+  # ---------------------------------------------------------------------------
+  # IDLE - Minimal background activity for baseline measurements
+  # ---------------------------------------------------------------------------
   idle:
     description: Minimal cluster activity for baseline measurements
+    
+    # Throughput (very light)
     baseRPS: 1
-    duration: 0                          # Run until stopped
-    rampUp: 10s
-    rampDown: 10s
     serviceMultipliers:
       client-oppy-configuration: 1
-      addonman: 1
-      provisioner-pycore-client-status: 2
-      # All other services: 1 (default)
+      client-oppy-steering: 1
+      client-oppy-orchestrator: 1
+    
+    # Concurrency
+    targetVUs: 5
+    maxVUs: 10
+    
+    # Traffic characteristics
+    trafficMix:
+      read: 80
+      write: 20
+    avgPayloadKB: 2
+    
+    # Resource thresholds (should be very low at idle)
+    resourceThresholds:
+      cpu:
+        warn: 20          # If >20% at idle, something is wrong
+        fail: 40
+      memory:
+        warn: 30
+        fail: 50
+      dbConnections:
+        expected: 5
+        warn: 15
+        fail: 30          # Using 30 RW as reference
+      kafkaLag:
+        warn: 10
+        fail: 50
+    
+    # Timing
+    duration: 0           # Run until stopped
+    rampUp: 10s
+    rampDown: 10s
 
-  # ─────────────────────────────────────────────────────────────────────────────
-  # LIGHT - Light production-like load
-  # Use for development testing and quick validations
-  # ─────────────────────────────────────────────────────────────────────────────
+  # ---------------------------------------------------------------------------
+  # LIGHT - Development and quick validation testing
+  # ---------------------------------------------------------------------------
   light:
-    description: Light production-like load for quick testing
+    description: Light load for development testing and quick validations
+    
+    # Throughput
     baseRPS: 10
+    serviceMultipliers:
+      client-oppy-configuration: 2        # 20 RPS
+      client-oppy-steering: 1             # 10 RPS
+      client-oppy-orchestrator: 0.5       # 5 RPS
+    
+    # Concurrency
+    targetVUs: 20
+    maxVUs: 50
+    
+    # Traffic characteristics
+    trafficMix:
+      read: 70
+      write: 30
+    avgPayloadKB: 3
+    
+    # Resource thresholds
+    resourceThresholds:
+      cpu:
+        warn: 40
+        fail: 60
+      memory:
+        warn: 50
+        fail: 70
+      dbConnections:
+        expected: 10
+        warn: 20
+        fail: 30
+      kafkaLag:
+        warn: 50
+        fail: 200
+    
+    # Timing
     duration: 0
     rampUp: 30s
     rampDown: 30s
-    serviceMultipliers:
-      client-oppy-configuration: 2       # Higher config traffic
-      addonman: 3                         # API gateway sees more traffic
-      provisioner-pycore-client-status: 5 # Many status updates
-      device-classification-evaluator: 2
-      downloader: 1
-      user-manager: 1
 
-  # ─────────────────────────────────────────────────────────────────────────────
-  # P50 - Median production load
-  # Represents typical daily traffic patterns
-  # ─────────────────────────────────────────────────────────────────────────────
+  # ---------------------------------------------------------------------------
+  # MINIKUBE - Optimized for local single-node testing
+  # ---------------------------------------------------------------------------
+  minikube:
+    description: Light load for Minikube local testing (resource-constrained)
+    
+    # Throughput (scaled for single node with limited resources)
+    baseRPS: 5
+    serviceMultipliers:
+      client-oppy-configuration: 3        # 15 RPS
+      client-oppy-steering: 2             # 10 RPS
+      client-oppy-orchestrator: 1         # 5 RPS
+    
+    # Concurrency
+    targetVUs: 15
+    maxVUs: 30
+    
+    # Traffic characteristics
+    trafficMix:
+      read: 70
+      write: 30
+    avgPayloadKB: 3
+    
+    # Resource thresholds (relaxed for Minikube)
+    resourceThresholds:
+      cpu:
+        warn: 60
+        fail: 80
+      memory:
+        warn: 70
+        fail: 85
+      dbConnections:
+        expected: 5
+        warn: 15
+        fail: 30
+      kafkaLag:
+        warn: 50
+        fail: 200
+    
+    # Timing
+    duration: 0
+    rampUp: 10s
+    rampDown: 10s
+
+  # ---------------------------------------------------------------------------
+  # P50 - Median production traffic
+  # TODO: Update baseRPS after ENG-942459 provides actual production metrics
+  # ---------------------------------------------------------------------------
   p50:
     description: Median (50th percentile) production traffic
-    baseRPS: 50
-    duration: 0
-    rampUp: 2m
-    rampDown: 1m
+    
+    # Throughput
+    # NOTE: ~425 req/s per POP is heartbeat traffic
+    # TODO: Get actual config/steering/orchestrator RPS from Prometheus
+    baseRPS: 50           # PLACEHOLDER - update with production data
     serviceMultipliers:
       client-oppy-configuration: 2
       client-oppy-steering: 1.5
-      addonman: 5                         # Primary entry point
-      provisioner-pycore-branding: 3
-      provisioner-pycore-client-status: 10 # High volume
-      provisioner-pycore-client-services: 3
-      device-classification-evaluator: 4
-      device-classification-config: 1
-      downloader: 2
-      user-manager: 2
-      enrollment-service: 1
-      cert-service: 1
+      client-oppy-orchestrator: 0.5
+    
+    # Concurrency
+    targetVUs: 50
+    maxVUs: 150
+    
+    # Traffic characteristics
+    trafficMix:
+      read: 70
+      write: 30
+    avgPayloadKB: 4
+    
+    # Resource thresholds (based on pycore reference)
+    resourceThresholds:
+      cpu:
+        warn: 50
+        fail: 70          # Below 80% alert threshold
+      memory:
+        warn: 60
+        fail: 75          # Below 85% alert threshold
+      dbConnections:
+        expected: 20
+        warn: 25
+        fail: 30
+      kafkaLag:
+        warn: 100
+        fail: 500
+    
+    # Timing
+    duration: 0
+    rampUp: 2m
+    rampDown: 1m
 
-  # ─────────────────────────────────────────────────────────────────────────────
-  # P95 - 95th percentile production load
-  # Represents peak daily traffic (busy hours)
-  # ─────────────────────────────────────────────────────────────────────────────
+  # ---------------------------------------------------------------------------
+  # P95 - Peak hour production traffic (RECOMMENDED for system tests)
+  # TODO: Update baseRPS after ENG-942459 provides actual production metrics
+  # ---------------------------------------------------------------------------
   p95:
-    description: 95th percentile production traffic (peak hours)
-    baseRPS: 100
+    description: 95th percentile production traffic (peak hours) - RECOMMENDED
+    
+    # Throughput
+    # TODO: Get actual peak RPS from Prometheus after ENG-942459
+    baseRPS: 100          # PLACEHOLDER - update with production data
+    serviceMultipliers:
+      client-oppy-configuration: 3        # 300 RPS
+      client-oppy-steering: 2             # 200 RPS
+      client-oppy-orchestrator: 1         # 100 RPS
+    
+    # Concurrency
+    targetVUs: 100
+    maxVUs: 300
+    
+    # Traffic characteristics
+    trafficMix:
+      read: 70
+      write: 30
+    avgPayloadKB: 5
+    
+    # Resource thresholds (based on pycore reference alerts)
+    resourceThresholds:
+      cpu:
+        warn: 70          # Alert at 80%
+        fail: 80          # Matches pycore alert threshold
+      memory:
+        warn: 75          # Alert at 85%
+        fail: 85          # Matches pycore alert threshold
+      dbConnections:
+        expected: 25
+        warn: 28
+        fail: 30          # Using oppy-support RW pool as reference
+      kafkaLag:
+        warn: 200
+        fail: 1000
+      goroutines:
+        warnDelta: 10     # Alert if goroutines increase >10%
+        failDelta: 25     # Fail if increase >25%
+    
+    # Latency thresholds (from pycore/oppy-support references)
+    latencyThresholds:
+      read:
+        mean: 150         # ≤150ms mean (oppy-support Phase 1)
+        p90: 200          # <200ms P90 (pycore reference)
+        p95: 300          # Derived
+        p99: 1000         # Derived
+      write:
+        mean: 200
+        p90: 300
+        p95: 500
+        p99: 2000
+    
+    # Timing
     duration: 0
     rampUp: 3m
     rampDown: 2m
-    serviceMultipliers:
-      client-oppy-configuration: 3
-      client-oppy-steering: 2
-      addonman: 8                         # Heavy API gateway traffic
-      provisioner-pycore-branding: 5
-      provisioner-pycore-client-status: 20 # Very high volume
-      provisioner-pycore-client-services: 5
-      provisioner-pycore-support: 2
-      device-classification-evaluator: 8
-      device-classification-config: 2
-      device-classification-tag: 3
-      downloader: 4
-      user-manager: 4
-      enrollment-service: 2
-      cert-service: 2
-      provisioner-core: 3
 
-  # ─────────────────────────────────────────────────────────────────────────────
-  # P99 - 99th percentile production load
-  # Represents extreme peak traffic (special events, incidents)
-  # ─────────────────────────────────────────────────────────────────────────────
+  # ---------------------------------------------------------------------------
+  # P99 - Extreme peak traffic
+  # TODO: Update baseRPS after ENG-942459 provides actual production metrics
+  # ---------------------------------------------------------------------------
   p99:
     description: 99th percentile production traffic (extreme peaks)
-    baseRPS: 150
-    duration: 0
-    rampUp: 5m
-    rampDown: 3m
+    
+    # Throughput
+    baseRPS: 150          # PLACEHOLDER - update with production data
     serviceMultipliers:
       client-oppy-configuration: 5
       client-oppy-steering: 3
-      addonman: 12
-      provisioner-pycore-branding: 8
-      provisioner-pycore-client-status: 30
-      provisioner-pycore-client-services: 8
-      provisioner-pycore-support: 4
-      device-classification-evaluator: 12
-      device-classification-config: 3
-      device-classification-tag: 5
-      downloader: 6
-      user-manager: 6
-      enrollment-service: 4
-      cert-service: 3
-      provisioner-core: 5
-
-  # ─────────────────────────────────────────────────────────────────────────────
-  # STRESS - Beyond production capacity
-  # Use to find breaking points and measure degradation
-  # ─────────────────────────────────────────────────────────────────────────────
-  stress:
-    description: Stress test - 150% of max production traffic
-    baseRPS: 200
+      client-oppy-orchestrator: 1.5
+    
+    # Concurrency
+    targetVUs: 150
+    maxVUs: 500
+    
+    # Traffic characteristics
+    trafficMix:
+      read: 65
+      write: 35
+    avgPayloadKB: 5
+    
+    # Resource thresholds (expect to approach alert thresholds)
+    resourceThresholds:
+      cpu:
+        warn: 75
+        fail: 85          # Slightly above 80% alert - stress territory
+      memory:
+        warn: 80
+        fail: 90          # Slightly above 85% alert - stress territory
+      dbConnections:
+        expected: 28
+        warn: 30
+        fail: 30          # Pool saturation expected
+      kafkaLag:
+        warn: 500
+        fail: 2000
+    
+    # Timing
     duration: 0
     rampUp: 5m
     rampDown: 3m
+
+  # ---------------------------------------------------------------------------
+  # STRESS - Beyond production capacity (find breaking points)
+  # ---------------------------------------------------------------------------
+  stress:
+    description: Stress test - 150% of expected max production traffic
+    
+    # Throughput
+    baseRPS: 200          # PLACEHOLDER - should be ~1.5x of p99
     serviceMultipliers:
       client-oppy-configuration: 8
       client-oppy-steering: 5
-      addonman: 20
-      provisioner-pycore-branding: 12
-      provisioner-pycore-client-status: 50
-      provisioner-pycore-client-services: 12
-      provisioner-pycore-support: 6
-      device-classification-evaluator: 20
-      device-classification-config: 5
-      device-classification-tag: 8
-      downloader: 10
-      user-manager: 10
-      enrollment-service: 6
-      cert-service: 5
-      provisioner-core: 8
-
-  # ─────────────────────────────────────────────────────────────────────────────
-  # SOAK - Sustained load for leak detection
-  # Run for extended periods to detect memory leaks, connection leaks
-  # ─────────────────────────────────────────────────────────────────────────────
-  soak:
-    description: Sustained p95 load for memory/connection leak detection
-    baseRPS: 100
-    duration: 4h                          # 4 hour soak test
+      client-oppy-orchestrator: 2
+    
+    # Concurrency
+    targetVUs: 200
+    maxVUs: 1000
+    
+    # Traffic characteristics
+    trafficMix:
+      read: 60
+      write: 40
+    avgPayloadKB: 6
+    
+    # Resource thresholds (expect degradation, looking for breaking point)
+    resourceThresholds:
+      cpu:
+        warn: 85          # Expected to exceed production alerts
+        fail: 95          # Only fail near 100%
+      memory:
+        warn: 90
+        fail: 95
+      dbConnections:
+        expected: 30      # Pool will saturate
+        warn: 30
+        fail: 30
+      kafkaLag:
+        warn: 1000
+        fail: 5000
+    
+    # Timing
+    duration: 0
     rampUp: 5m
-    rampDown: 5m
+    rampDown: 3m
+
+  # ---------------------------------------------------------------------------
+  # SOAK - Extended duration for leak detection
+  # ---------------------------------------------------------------------------
+  soak:
+    description: Sustained p95 load for memory/connection leak detection (4 hours)
+    
+    # Throughput (same as p95)
+    baseRPS: 100
     serviceMultipliers:
       client-oppy-configuration: 3
       client-oppy-steering: 2
-      addonman: 8
-      provisioner-pycore-branding: 5
-      provisioner-pycore-client-status: 20
-      provisioner-pycore-client-services: 5
-      device-classification-evaluator: 8
-      downloader: 4
-      user-manager: 4
+      client-oppy-orchestrator: 1
+    
+    # Concurrency
+    targetVUs: 100
+    maxVUs: 300
+    
+    # Traffic characteristics
+    trafficMix:
+      read: 70
+      write: 30
+    avgPayloadKB: 5
+    
+    # Resource thresholds (focus on stability over time)
+    resourceThresholds:
+      cpu:
+        warn: 70
+        fail: 80
+      memory:
+        warn: 75
+        fail: 85
+        maxGrowthPercent: 15    # Fail if memory grows >15% over 4 hours
+      dbConnections:
+        expected: 25
+        warn: 28
+        fail: 30
+      kafkaLag:
+        warn: 200
+        fail: 1000
+      goroutines:
+        warnDelta: 5            # Stricter for soak - should be very stable
+        failDelta: 10           # Goroutine leak detection
+    
+    # Timing
+    duration: 4h                # 4-hour soak test
+    rampUp: 5m
+    rampDown: 5m
 
-# ─────────────────────────────────────────────────────────────────────────────
-# CUSTOM PROFILE TEMPLATE
-# Copy this to create custom profiles for specific test scenarios
-# ─────────────────────────────────────────────────────────────────────────────
-# custom:
-#   description: Custom profile for specific scenario
-#   baseRPS: 75
-#   duration: 30m
-#   rampUp: 2m
-#   rampDown: 1m
-#   serviceMultipliers:
-#     service-name: multiplier
+# =============================================================================
+# QUICK REFERENCE
+# =============================================================================
+#
+# Profile    | Total RPS* | VUs  | CPU Warn | Mem Warn | Use Case
+# -----------|------------|------|----------|----------|------------------
+# idle       | ~3         | 5    | 20%      | 30%      | Baseline
+# light      | ~35        | 20   | 40%      | 50%      | Dev testing
+# minikube   | ~30        | 15   | 60%      | 70%      | Local testing
+# p50        | ~200*      | 50   | 50%      | 60%      | Typical traffic
+# p95        | ~600*      | 100  | 70%      | 75%      | Peak hours (RECOMMENDED)
+# p99        | ~1400*     | 150  | 75%      | 80%      | Extreme peak
+# stress     | ~3000*     | 200  | 85%      | 90%      | Breaking point
+# soak       | ~600*      | 100  | 70%      | 75%      | Leak detection (4h)
+#
+# * RPS values are PLACEHOLDERS - update after ENG-942459 completes
+#
+# ALERT REFERENCE (pycore):
+#   CPU: <80% | Memory: <85% | Latency: ≤150ms mean, <200ms P90
+#
+# =============================================================================

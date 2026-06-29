@@ -1,0 +1,142 @@
+[0;34m[setup][0m Step 1: Validating system resources...
+[0;36m[i][0m Docker resources: 14 CPUs, 23GB memory
+[0;32m[✓][0m Resource validation complete
+[0;34m[setup][0m Checking prerequisites...
+[0;32m[✓][0m Prerequisites verified
+[0;36m[i][0m Using client-oppy repo: /Users/cbalasaiharika/Desktop/code/client-oppy
+[0;34m[setup][0m Step 2: Starting infrastructure (MySQL, Kafka, Redis)...
+[0;36m[i][0m Using: /Users/cbalasaiharika/Desktop/code/client-oppy/docker/dev/docker-compose.yaml
+[0;34m[setup][0m Waiting for infrastructure to be ready...
+[0;32m[✓][0m Infrastructure started
+[0;34m[setup][0m Step 3: Starting Minikube cluster...
+[0;34m[setup][0m Creating cluster with 6 CPUs, 12288MB memory...
+[0;32m[✓][0m Minikube started
+[0;34m[setup][0m Creating namespaces...
+[0;34m[setup][0m Creating image pull secret for artifactory...
+[0;32m[✓][0m Minikube configured
+[0;34m[setup][0m Step 4: Pulling and loading service images...
+[0;34m[setup][0m Pulling artifactory-rd.netskope.io/nsclient-release-docker/client-oppy-configuration:latest...
+[0;34m[setup][0m Loading into minikube...
+[0;34m[setup][0m Pulling artifactory-rd.netskope.io/nsclient-release-docker/client-oppy-orchestrator:latest...
+[0;34m[setup][0m Loading into minikube...
+[0;34m[setup][0m Pulling artifactory-rd.netskope.io/nsclient-release-docker/client-oppy-steering:latest...
+[0;34m[setup][0m Loading into minikube...
+[0;32m[✓][0m All images loaded into minikube
+[0;34m[setup][0m Step 5: Deploying client-oppy services via Helm...
+[0;36m[i][0m Deploying from Helm charts: /Users/cbalasaiharika/Desktop/code/client-oppy/helm/
+Adding repo grafana https://grafana.github.io/helm-charts
+"grafana" has been added to your repositories
+Building dependency release=client-oppy-orchestrator, chart=/Users/cbalasaiharika/Desktop/code/client-oppy/helm/client-oppy-orchestrator
+Building dependency release=client-oppy-configuration, chart=/Users/cbalasaiharika/Desktop/code/client-oppy/helm/client-oppy-configuration
+Building dependency release=client-oppy-steering, chart=/Users/cbalasaiharika/Desktop/code/client-oppy/helm/client-oppy-steering
+Upgrading release=client-oppy-steering, chart=/Users/cbalasaiharika/Desktop/code/client-oppy/helm/client-oppy-steering, namespace=client-oppy
+Upgrading release=client-oppy-configuration, chart=/Users/cbalasaiharika/Desktop/code/client-oppy/helm/client-oppy-configuration, namespace=client-oppy
+Upgrading release=client-oppy-orchestrator, chart=/Users/cbalasaiharika/Desktop/code/client-oppy/helm/client-oppy-orchestrator, namespace=client-oppy
+Release "client-oppy-configuration" does not exist. Installing it now.
+Release "client-oppy-steering" does not exist. Installing it now.
+Release "client-oppy-orchestrator" does not exist. Installing it now.
+
+========== Failed Releases ==========
+NAME                        NAMESPACE     CHART                                                                           VERSION   DURATION
+client-oppy-configuration   client-oppy   /Users/cbalasaiharika/Desktop/code/client-oppy/helm/client-oppy-configuration                 5m0s
+client-oppy-steering        client-oppy   /Users/cbalasaiharika/Desktop/code/client-oppy/helm/client-oppy-steering                      5m0s
+client-oppy-orchestrator    client-oppy   /Users/cbalasaiharika/Desktop/code/client-oppy/helm/client-oppy-orchestrator                  5m0s
+
+in ./helmfile.yaml: failed processing release client-oppy-configuration: command "/opt/homebrew/bin/helm" exited with non-zero status:
+
+PATH:
+  /opt/homebrew/bin/helm
+
+ARGS:
+  0: helm (4 bytes)
+  1: upgrade (7 bytes)
+  2: --install (9 bytes)
+  3: client-oppy-configuration (25 bytes)
+  4: /Users/cbalasaiharika/Desktop/code/client-oppy/helm/client-oppy-configuration (77 bytes)
+  5: --wait (6 bytes)
+  6: --timeout (9 bytes)
+  7: 300s (4 bytes)
+  8: --create-namespace (18 bytes)
+  9: --namespace (11 bytes)
+  10: client-oppy (11 bytes)
+  11: --values (8 bytes)
+  12: /var/folders/ft/vxqwk7hs4xz5w52_lxlmkfhm0000gn/T/helmfile1643514108/client-oppy-client-oppy-configuration-values-7f466dd8d6 (123 bytes)
+  13: --reset-values (14 bytes)
+  14: --history-max (13 bytes)
+  15: 10 (2 bytes)
+
+ERROR:
+  exit status 1
+
+EXIT STATUS
+  1
+
+STDERR:
+  Error: resource Deployment/client-oppy/client-oppy-configuration not ready. status: InProgress, message: Replicas: 0/1
+  context deadline exceeded
+
+COMBINED OUTPUT:
+  Release "client-oppy-configuration" does not exist. Installing it now.
+  Error: resource Deployment/client-oppy/client-oppy-configuration not ready. status: InProgress, message: Replicas: 0/1
+  context deadline exceeded
+[0;33m[!][0m Deployment failed, retrying... (2 left)
+Adding repo grafana https://grafana.github.io/helm-charts
+"grafana" has been added to your repositories
+Building dependency release=client-oppy-configuration, chart=/Users/cbalasaiharika/Desktop/code/client-oppy/helm/client-oppy-configuration
+Building dependency release=client-oppy-orchestrator, chart=/Users/cbalasaiharika/Desktop/code/client-oppy/helm/client-oppy-orchestrator
+Building dependency release=client-oppy-steering, chart=/Users/cbalasaiharika/Desktop/code/client-oppy/helm/client-oppy-steering
+Upgrading release=client-oppy-configuration, chart=/Users/cbalasaiharika/Desktop/code/client-oppy/helm/client-oppy-configuration, namespace=client-oppy
+Upgrading release=client-oppy-steering, chart=/Users/cbalasaiharika/Desktop/code/client-oppy/helm/client-oppy-steering, namespace=client-oppy
+Upgrading release=client-oppy-orchestrator, chart=/Users/cbalasaiharika/Desktop/code/client-oppy/helm/client-oppy-orchestrator, namespace=client-oppy
+
+========== Failed Releases ==========
+NAME                        NAMESPACE     CHART                                                                           VERSION   DURATION
+client-oppy-orchestrator    client-oppy   /Users/cbalasaiharika/Desktop/code/client-oppy/helm/client-oppy-orchestrator                 4m50s
+client-oppy-configuration   client-oppy   /Users/cbalasaiharika/Desktop/code/client-oppy/helm/client-oppy-configuration                4m50s
+client-oppy-steering        client-oppy   /Users/cbalasaiharika/Desktop/code/client-oppy/helm/client-oppy-steering                     4m50s
+
+in ./helmfile.yaml: failed processing release client-oppy-orchestrator: command "/opt/homebrew/bin/helm" exited with non-zero status:
+
+PATH:
+  /opt/homebrew/bin/helm
+
+ARGS:
+  0: helm (4 bytes)
+  1: upgrade (7 bytes)
+  2: --install (9 bytes)
+  3: client-oppy-orchestrator (24 bytes)
+  4: /Users/cbalasaiharika/Desktop/code/client-oppy/helm/client-oppy-orchestrator (76 bytes)
+  5: --wait (6 bytes)
+  6: --timeout (9 bytes)
+  7: 300s (4 bytes)
+  8: --create-namespace (18 bytes)
+  9: --namespace (11 bytes)
+  10: client-oppy (11 bytes)
+  11: --values (8 bytes)
+  12: /var/folders/ft/vxqwk7hs4xz5w52_lxlmkfhm0000gn/T/helmfile3360507674/client-oppy-client-oppy-orchestrator-values-65f7f6779c (122 bytes)
+  13: --reset-values (14 bytes)
+  14: --history-max (13 bytes)
+  15: 10 (2 bytes)
+
+ERROR:
+  exit status 1
+
+EXIT STATUS
+  1
+
+STDERR:
+  level=WARN msg="upgrade failed" name=client-oppy-orchestrator error="resource Deployment/client-oppy/client-oppy-orchestrator not ready. status: Failed, message: Progress deadline exceeded"
+  Error: UPGRADE FAILED: resource Deployment/client-oppy/client-oppy-orchestrator not ready. status: Failed, message: Progress deadline exceeded
+
+COMBINED OUTPUT:
+  level=WARN msg="upgrade failed" name=client-oppy-orchestrator error="resource Deployment/client-oppy/client-oppy-orchestrator not ready. status: Failed, message: Progress deadline exceeded"
+  Error: UPGRADE FAILED: resource Deployment/client-oppy/client-oppy-orchestrator not ready. status: Failed, message: Progress deadline exceeded
+[0;33m[!][0m Deployment failed, retrying... (1 left)
+Adding repo grafana https://grafana.github.io/helm-charts
+"grafana" has been added to your repositories
+Building dependency release=client-oppy-configuration, chart=/Users/cbalasaiharika/Desktop/code/client-oppy/helm/client-oppy-configuration
+Building dependency release=client-oppy-orchestrator, chart=/Users/cbalasaiharika/Desktop/code/client-oppy/helm/client-oppy-orchestrator
+Building dependency release=client-oppy-steering, chart=/Users/cbalasaiharika/Desktop/code/client-oppy/helm/client-oppy-steering
+Upgrading release=client-oppy-configuration, chart=/Users/cbalasaiharika/Desktop/code/client-oppy/helm/client-oppy-configuration, namespace=client-oppy
+Upgrading release=client-oppy-steering, chart=/Users/cbalasaiharika/Desktop/code/client-oppy/helm/client-oppy-steering, namespace=client-oppy
+Upgrading release=client-oppy-orchestrator, chart=/Users/cbalasaiharika/Desktop/code/client-oppy/helm/client-oppy-orchestrator, namespace=client-oppy

@@ -16,4 +16,4 @@ Single fault injection scenarios under load for Downloader service.
 
 ## Reference
 
-- Config: `config/workloads/downloader/dl-sf*.yaml`
+- Config: `config/scenarios/downloader/dl-sf*.yaml`

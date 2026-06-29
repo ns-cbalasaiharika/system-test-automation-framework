@@ -1,17 +1,18 @@
 apiVersion: k6.io/v1alpha1
 kind: TestRun
 metadata:
-  name: bl01-scenario
+  name: cluster-load
   namespace: k6-tests
 spec:
   parallelism: 1
   script:
     configMap:
-      name: k6-bl01
+      name: k6-cluster-load
       file: script.js
   arguments: >-
+    --env LOAD_PROFILE=light
     --env ENV=minikube-cluster
-    --env PROFILE=smoke
+    --env SERVICES=client-oppy-configuration
   runner:
     image: grafana/k6:latest
     resources:
@@ -22,19 +23,14 @@ spec:
         cpu: "100m"
         memory: "128Mi"
     volumes:
+      - name: cluster-load-config
+        configMap:
+          name: k6-cluster-load-config
       - name: env-config
         configMap:
           name: k6-env-config
-      - name: profiles-config
-        configMap:
-          name: k6-profiles-config
-      - name: scenarios-config
-        configMap:
-          name: k6-scenarios-config
     volumeMounts:
+      - name: cluster-load-config
+        mountPath: /config/cluster-load
       - name: env-config
         mountPath: /config/environments
-      - name: profiles-config
-        mountPath: /config/profiles
-      - name: scenarios-config
-        mountPath: /config/scenarios/client-oppy

@@ -29,7 +29,7 @@ export class BypassLoggingOperation extends BaseOperation implements IBypassLogg
     });
     bypassLoggingGetLatency.add(response.timings.duration);
 
-    const data = ok ? parseBody<BypassLoggingConfig>(response) : undefined;
+    const data = ok ? parseBody<BypassLoggingConfig>(response) ?? undefined : undefined;
 
     return { response, ok, data };
   }
@@ -43,7 +43,7 @@ export class BypassLoggingOperation extends BaseOperation implements IBypassLogg
     });
     bypassLoggingUpdateLatency.add(response.timings.duration);
 
-    const data = ok ? parseBody<BypassLoggingConfig>(response) : undefined;
+    const data = ok ? parseBody<BypassLoggingConfig>(response) ?? undefined : undefined;
 
     return { response, ok, data };
   }

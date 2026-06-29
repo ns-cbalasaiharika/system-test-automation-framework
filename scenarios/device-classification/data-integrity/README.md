@@ -16,4 +16,4 @@ Data integrity scenarios for Device Classification services.
 
 ## Reference
 
-- Config: `config/workloads/device-classification/dc-di*.yaml`
+- Config: `config/scenarios/device-classification/dc-di*.yaml`

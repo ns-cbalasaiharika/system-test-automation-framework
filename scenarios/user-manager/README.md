@@ -27,7 +27,7 @@ scenarios/user-manager/
 ## Config Files
 
 Each scenario needs a corresponding YAML config in:
-`config/workloads/user-manager/`
+`config/scenarios/user-manager/`
 
 ## Reference
 

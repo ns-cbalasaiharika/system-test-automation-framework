@@ -370,16 +370,20 @@ export function createResultsPipeline(
     // Generate timestamp for filenames
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     
+    // Use absolute path for results to avoid path issues from bundled scripts
+    // When running from dist/, relative paths don't work correctly
+    const resultsDir = __ENV.RESULTS_DIR || './results';
+    
     // JSON file output
     const jsonPath = outputConfig.jsonFile || 
-      `../../results/${config.scenario.id}_${timestamp}.json`;
+      `${resultsDir}/${config.scenario.id}_${timestamp}.json`;
     outputs[jsonPath] = formatJSON(result);
     
     // JUnit XML output (for CI)
     if (outputConfig.junitFile) {
       outputs[outputConfig.junitFile] = formatJUnit(result);
     } else {
-      outputs[`../../results/${config.scenario.id}_${timestamp}.xml`] = formatJUnit(result);
+      outputs[`${resultsDir}/${config.scenario.id}_${timestamp}.xml`] = formatJUnit(result);
     }
     
     // Stdout summary

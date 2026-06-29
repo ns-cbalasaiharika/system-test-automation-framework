@@ -40,7 +40,7 @@ export class SteeringCrudOperation extends BaseOperation implements ISteeringCru
     steeringGetLatency.add(response.timings.duration);
 
     const etag = response.headers['Etag'] || response.headers['etag'] || null;
-    const data = ok ? parseBody<SteeringConfig>(response) : undefined;
+    const data = ok ? parseBody<SteeringConfig>(response) ?? undefined : undefined;
 
     return { response, ok, data, etag };
   }
@@ -90,7 +90,7 @@ export class SteeringCrudOperation extends BaseOperation implements ISteeringCru
     const parsed = parseBody<SteeringConfig>(response);
     const configId = parsed?.id?.toString() || null;
 
-    return { response, ok, configId, data: parsed, etag };
+    return { response, ok, configId, data: parsed ?? undefined, etag };
   }
 
   /**
@@ -106,7 +106,7 @@ export class SteeringCrudOperation extends BaseOperation implements ISteeringCru
     if (ok) steeringConfigsUpdated.add(1);
 
     const newEtag = response.headers['Etag'] || response.headers['etag'] || null;
-    const data = ok ? parseBody<SteeringConfig>(response) : undefined;
+    const data = ok ? parseBody<SteeringConfig>(response) ?? undefined : undefined;
 
     return { response, ok, data, newEtag };
   }
@@ -124,7 +124,7 @@ export class SteeringCrudOperation extends BaseOperation implements ISteeringCru
     if (ok) steeringConfigsUpdated.add(1);
 
     const newEtag = response.headers['Etag'] || response.headers['etag'] || null;
-    const data = ok ? parseBody<SteeringConfig>(response) : undefined;
+    const data = ok ? parseBody<SteeringConfig>(response) ?? undefined : undefined;
 
     return { response, ok, data, newEtag };
   }

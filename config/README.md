@@ -8,12 +8,10 @@ This directory contains all configuration files that drive the test framework. T
 
 ```
 config/
-├── environments/          # WHERE to run (service URLs, headers, tenant IDs)
-│   ├── local.yaml             # Local development (localhost)
-│   ├── minikube.yaml          # Local Kubernetes (minikube)
-│   ├── rancher.yaml           # Dedicated performance cluster
-│   ├── staging.yaml           # Pre-production
-│   └── production.yaml        # Production (READ-ONLY!)
+├── environments/          # WHERE to run (Kubernetes cluster service URLs)
+│   ├── minikube-cluster.yaml # k6-operator in Minikube (local development)
+│   ├── rancher.yaml          # k6-operator in Rancher (production-like)
+│   └── staging.yaml          # k6-operator in Staging
 │
 ├── profiles/              # HOW MUCH load (VUs, duration, ramp pattern)
 │   ├── smoke.yaml             # Quick validation (~35s, 1 VU)
@@ -22,46 +20,61 @@ config/
 │   ├── soak.yaml              # Leak detection (~4hrs, 50 VUs)
 │   └── spike.yaml             # Burst handling (~12min, 0→100 VUs)
 │
-├── workloads/             # WHAT to test (traffic mix, SLOs, pass criteria)
-│   ├── client-oppy/           # Client-oppy scenarios (bl01–bl10)
-│   ├── addonman/              # Addonman scenarios (placeholder)
-│   ├── downloader/            # Downloader scenarios (placeholder)
-│   ├── device-classification/ # Device classification scenarios (placeholder)
-│   ├── provisioner/           # Provisioner scenarios (placeholder)
-│   ├── user-manager/          # User manager scenarios (placeholder)
-│   └── enrollment/            # Enrollment scenarios (placeholder)
+├── scenarios/             # WHAT to test (traffic mix, SLOs, pass criteria)
+│   └── client-oppy/           # Client-oppy scenarios (bl01–bl10)
 │
 └── cluster-load/          # BACKGROUND CLUSTER LOADING
     ├── cluster-services.yaml  # All services, their APIs, ports, traffic weights
     └── load-profiles.yaml     # Cluster-wide load levels (idle → stress)
 ```
 
+## Testing Approach
+
+All tests run **inside Kubernetes** using **k6-operator**:
+
+```bash
+# Run test in Minikube
+./scripts/k6-operator-test.sh --scenario bl01 --env minikube-cluster
+
+# Run test with background load in Rancher
+./scripts/k6-operator-test.sh --scenario bl01 --env rancher --with-load p95
+```
+
+This approach ensures:
+- Reliable testing (no port-forward issues)
+- Direct pod-to-pod communication
+- Consistent behavior across environments
+
 ## Configuration Hierarchy
 
 Configs are merged with the following precedence (lowest → highest):
 
 ```
-1. Scenario Config    (config/workloads/<service>/<id>.yaml)
+1. Scenario Config    (config/scenarios/<service>/<id>.yaml)
         ↓
 2. Profile Config     (config/profiles/<profile>.yaml)
         ↓
 3. Environment Config (config/environments/<env>.yaml)
         ↓
-4. Environment Vars   (ENV, PROFILE, BASE_URL, TENANT_ID)
-        ↓
-5. CLI Flags          (--vus, --duration via K6_ARGS)
+4. Environment Vars   (ENV, PROFILE)
 ```
 
 ## Config Types
 
 ### Environments (`config/environments/*.yaml`)
 
-Defines where tests run — service URLs, default headers, tenant IDs.
+Defines where tests run — Kubernetes service DNS names, default headers, tenant IDs.
+
+| Environment | Use Case |
+|-------------|----------|
+| `minikube-cluster` | Local Minikube development |
+| `rancher` | Production-like Rancher cluster |
+| `staging` | Staging environment |
 
 | Field | Purpose |
 |-------|---------|
 | `name` | Environment identifier |
-| `services` | Map of service name → base URL |
+| `services` | Map of service name → Kubernetes service URL |
 | `defaults.tenantId` | Default tenant ID header |
 | `defaults.headers` | Default HTTP headers |
 | `defaults.thinkTime` | Delay between requests (`minMs`, `maxMs`) |
@@ -70,6 +83,14 @@ Defines where tests run — service URLs, default headers, tenant IDs.
 
 Defines how much load to apply — VUs, stages, duration.
 
+| Profile | Duration | VUs | Use Case |
+|---------|----------|-----|----------|
+| `smoke` | 35s | 1 | Quick validation, CI |
+| `load` | 5m | 10→50→10 | Standard load test |
+| `stress` | 10m | 10→100→10 | Find breaking point |
+| `soak` | 30m | 20 | Memory leak detection |
+| `spike` | 5m | 1→100→1 | Sudden traffic burst |
+
 | Field | Purpose |
 |-------|---------|
 | `name` | Profile identifier |
@@ -77,7 +98,7 @@ Defines how much load to apply — VUs, stages, duration.
 | `stages` | VU ramp stages `[{duration, target}, ...]` |
 | `thresholdMultiplier` | Relaxes SLOs (`1.0` = strict, `5.0` = very lenient) |
 
-### Scenarios (`config/workloads/<service>/*.yaml`)
+### scenarios (`config/scenarios/<service>/*.yaml`)
 
 Defines what to test — operations, SLOs, faults, setup/teardown.
 
@@ -93,11 +114,6 @@ Defines what to test — operations, SLOs, faults, setup/teardown.
 | `passCriteria` | No | Human-readable pass/fail conditions |
 | `setup` | No | Setup config (health check, seeding) |
 | `teardown` | No | Teardown config (cleanup paths) |
-| `faults` | No | Fault injection during test |
-| `infrastructureSLOs` | No | Infrastructure metrics (CPU, memory, Kafka lag) |
-| `auth` | No | Authentication strategy override |
-| `isolation` | No | Test data isolation config |
-| `e2eFlows` | No | Multi-service E2E flow definitions |
 
 ### Cluster Load (`config/cluster-load/`)
 
@@ -109,17 +125,18 @@ Defines background traffic to simulate production conditions.
 
 **`load-profiles.yaml`** — Cluster-wide load levels:
 
-| Profile | Base RPS | Use Case |
-|---------|----------|----------|
-| `idle` | 1 | Baseline measurements |
-| `light` | 10 | Development testing |
-| `p50` | 50 | Median daily traffic |
-| `p95` | 100 | Peak daily traffic |
-| `p99` | 150 | Extreme peaks |
-| `stress` | 200 | Beyond capacity |
-| `soak` | 100 (4h) | Memory leak detection |
+| Profile | Base RPS | Duration | Use Case |
+|---------|----------|----------|----------|
+| `idle` | 1 | indefinite | Baseline measurements |
+| `light` | 10 | indefinite | Development testing |
+| `minikube` | 5 | 2 min | Light Minikube testing |
+| `stress` | 200 | indefinite | Beyond capacity |
+| `soak` | 100 | 4 hours | Memory leak detection |
 
-Each profile has per-service multipliers reflecting production traffic patterns.
+Usage with k6-operator:
+```bash
+./scripts/k6-operator-test.sh --scenario bl01 --env minikube-cluster --with-load light
+```
 
 ## Scenario YAML Example
 
@@ -147,32 +164,16 @@ slos:
   errors:
     rate: 0.001
 
-# Optional: config-driven setup
 setup:
   wait_for_ready: true
   health_endpoint: /api/v1/ready
   seed_count: 10
   seed_path: /client/config
 
-# Optional: config-driven teardown
 teardown:
   cleanup_data: true
   list_path: /client/config
   delete_path: /client/config/{id}
-
-# Optional: fault injection
-# faults:
-#   - type: pod-restart
-#     target: client-oppy-configuration
-#     phase: during
-#     trigger_at: "50%"
-
-# Optional: infrastructure SLOs
-# infrastructureSLOs:
-#   cpu_usage:
-#     max: 80
-#     query: "container_cpu_usage{service='client-oppy'}"
-#     unit: "%"
 
 passCriteria:
   - All per-endpoint p99 latencies within SLO
@@ -182,21 +183,10 @@ passCriteria:
 
 ## Adding New Configurations
 
-### Adding a New Service
-
-1. Add service URLs to each environment config under `services`
-2. Create `config/workloads/<service>/` folder
-3. Add the service to `config/cluster-load/cluster-services.yaml`
-4. Create scenario YAMLs or use the generator:
-
-```bash
-npm run generate -- --service my-service --category baseline --id ms-bl01 --name "My Service Baseline"
-```
-
 ### Adding a New Environment
 
-1. Copy an existing environment YAML (e.g., `local.yaml`)
-2. Update `services` with URLs for your environment
+1. Copy an existing environment YAML (e.g., `minikube-cluster.yaml`)
+2. Update `services` with Kubernetes service DNS URLs
 3. Set appropriate `tenantId` and `headers`
 
 ### Adding a New Profile
@@ -207,7 +197,7 @@ npm run generate -- --service my-service --category baseline --id ms-bl01 --name
 
 ### Adding a New Scenario
 
-1. Create YAML in `config/workloads/<service>/<id>.yaml`
+1. Create YAML in `config/scenarios/<service>/<id>.yaml`
 2. Set `service` field (must exist in environment configs)
 3. Define `trafficMix` (must sum to 100)
 4. Set `slos` for each latency metric
@@ -217,7 +207,7 @@ npm run generate -- --service my-service --category baseline --id ms-bl01 --name
 
 ```bash
 # Validate all config files
-npm run validate
+npx ts-node scripts/validate-config.ts
 ```
 
 This checks:
@@ -226,4 +216,3 @@ This checks:
 - Traffic mix sums to 100 (scenarios)
 - SLO formats are correct
 - Services referenced exist in at least one environment
-- Profiles have valid stages and multipliers

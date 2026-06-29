@@ -9,4 +9,4 @@ Single fault injection scenarios for Provisioner services.
 
 ## Reference
 
-- Config: `config/workloads/provisioner/pv-sf*.yaml`
+- Config: `config/scenarios/provisioner/pv-sf*.yaml`

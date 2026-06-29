@@ -22,4 +22,4 @@ Scenarios that inject one fault at a time while the system is under load.
 ## Reference
 
 - See `scenarios/client-oppy/single-fault/` for examples
-- Config: `config/workloads/addonman/am-sf*.yaml`
+- Config: `config/scenarios/addonman/am-sf*.yaml`

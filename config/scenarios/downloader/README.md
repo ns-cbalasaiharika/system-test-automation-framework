@@ -9,7 +9,7 @@ Each scenario in `scenarios/downloader/` needs a corresponding YAML config here.
 ## File Naming
 
 Match the scenario file name:
-- `scenarios/downloader/dl01-golden-baseline.ts` → `config/workloads/downloader/dl01-golden-baseline.yaml`
+- `scenarios/downloader/dl01-golden-baseline.ts` → `config/scenarios/downloader/dl01-golden-baseline.yaml`
 
 ## Required Fields
 
@@ -41,4 +41,4 @@ passCriteria:
 
 ## Reference
 
-- See `config/workloads/client-oppy/bl01-golden-baseline.yaml` for a working example
+- See `config/scenarios/client-oppy/bl01-golden-baseline.yaml` for a working example

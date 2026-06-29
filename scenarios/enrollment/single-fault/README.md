@@ -9,4 +9,4 @@ Single fault injection scenarios for Enrollment services.
 
 ## Reference
 
-- Config: `config/workloads/enrollment/en-sf*.yaml`
+- Config: `config/scenarios/enrollment/en-sf*.yaml`

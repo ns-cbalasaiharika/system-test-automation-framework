@@ -9,4 +9,4 @@ Single fault injection scenarios for Device Classification services.
 
 ## Reference
 
-- Config: `config/workloads/device-classification/dc-sf*.yaml`
+- Config: `config/scenarios/device-classification/dc-sf*.yaml`

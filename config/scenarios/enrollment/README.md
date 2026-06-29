@@ -9,7 +9,7 @@ Each scenario in `scenarios/enrollment/` needs a corresponding YAML config here.
 ## File Naming
 
 Match the scenario file name:
-- `scenarios/enrollment/en01-golden-baseline.ts` → `config/workloads/enrollment/en01-golden-baseline.yaml`
+- `scenarios/enrollment/en01-golden-baseline.ts` → `config/scenarios/enrollment/en01-golden-baseline.yaml`
 
 ## Required Fields
 
@@ -48,4 +48,4 @@ passCriteria:
 
 ## Reference
 
-- See `config/workloads/client-oppy/bl01-golden-baseline.yaml` for a working example
+- See `config/scenarios/client-oppy/bl01-golden-baseline.yaml` for a working example

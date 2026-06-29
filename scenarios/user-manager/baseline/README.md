@@ -19,4 +19,4 @@ Baseline performance scenarios for User Manager service.
 
 ## Reference
 
-- Config: `config/workloads/user-manager/um-bl*.yaml`
+- Config: `config/scenarios/user-manager/um-bl*.yaml`

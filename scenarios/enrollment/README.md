@@ -25,7 +25,7 @@ scenarios/enrollment/
 ## Config Files
 
 Each scenario needs a corresponding YAML config in:
-`config/workloads/enrollment/`
+`config/scenarios/enrollment/`
 
 ## Reference
 

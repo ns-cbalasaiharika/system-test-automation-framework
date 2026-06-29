@@ -21,4 +21,4 @@ Scenarios that verify data consistency under concurrent operations.
 ## Reference
 
 - See `scenarios/client-oppy/data-integrity/` for examples
-- Config: `config/workloads/addonman/am-di*.yaml`
+- Config: `config/scenarios/addonman/am-di*.yaml`

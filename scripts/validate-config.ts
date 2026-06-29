@@ -440,8 +440,8 @@ function validateAll(configDir: string): ValidationResult {
     }
   }
   
-  // Validate workloads (scenario configs)
-  const scenarioDir = path.join(configDir, 'workloads');
+  // Validate scenarios (scenario configs)
+  const scenarioDir = path.join(configDir, 'scenarios');
   const scenarioFiles = findYAMLFiles(scenarioDir);
   
   for (const file of scenarioFiles) {

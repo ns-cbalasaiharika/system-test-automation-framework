@@ -16,4 +16,4 @@ Data integrity scenarios for Downloader service.
 
 ## Reference
 
-- Config: `config/workloads/downloader/dl-di*.yaml`
+- Config: `config/scenarios/downloader/dl-di*.yaml`

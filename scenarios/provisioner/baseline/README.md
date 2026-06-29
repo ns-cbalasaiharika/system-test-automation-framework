@@ -17,4 +17,4 @@ Baseline performance scenarios for Provisioner services.
 
 ## Reference
 
-- Config: `config/workloads/provisioner/pv-bl*.yaml`
+- Config: `config/scenarios/provisioner/pv-bl*.yaml`

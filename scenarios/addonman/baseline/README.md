@@ -22,4 +22,4 @@ Baseline scenarios establish performance benchmarks under normal conditions.
 ## Reference
 
 - See `scenarios/client-oppy/baseline/` for examples
-- Config: `config/workloads/addonman/am-bl*.yaml`
+- Config: `config/scenarios/addonman/am-bl*.yaml`

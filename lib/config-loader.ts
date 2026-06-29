@@ -76,6 +76,7 @@ const CONFIG_PATH_PREFIXES = [
   '../../../config',     // dist/scenarios/service/*.bundle.js
   '../../../../config',  // dist/scenarios/service/category/*.bundle.js
   'config',              // When running from framework root
+  '/config',             // Absolute path for k6-operator (in-cluster execution)
 ];
 
 /**
@@ -115,7 +116,7 @@ function loadScenarioConfig(scenarioId: string, serviceName?: string): ScenarioC
   
   // If service name is provided, try service-specific path first
   if (serviceName) {
-    subPaths.push(`workloads/${serviceName}/${scenarioId}.yaml`);
+    subPaths.push(`scenarios/${serviceName}/${scenarioId}.yaml`);
   }
   
   // Try common service paths based on scenario ID prefix (alphabetic part only)
@@ -132,11 +133,11 @@ function loadScenarioConfig(scenarioId: string, serviceName?: string): ScenarioC
   };
   
   if (servicePathMap[alphaPrefix]) {
-    subPaths.push(`workloads/${servicePathMap[alphaPrefix]}/${scenarioId}.yaml`);
+    subPaths.push(`scenarios/${servicePathMap[alphaPrefix]}/${scenarioId}.yaml`);
   }
   
   // Try flat path (legacy)
-  subPaths.push(`workloads/${scenarioId}.yaml`);
+  subPaths.push(`scenarios/${scenarioId}.yaml`);
   
   // Try each sub-path with each prefix depth
   for (const subPath of subPaths) {

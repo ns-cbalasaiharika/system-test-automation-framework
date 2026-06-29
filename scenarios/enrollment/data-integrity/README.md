@@ -16,4 +16,4 @@ Data integrity scenarios for Enrollment services.
 
 ## Reference
 
-- Config: `config/workloads/enrollment/en-di*.yaml`
+- Config: `config/scenarios/enrollment/en-di*.yaml`

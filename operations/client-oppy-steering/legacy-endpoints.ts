@@ -60,7 +60,7 @@ export class LegacySteeringOperation extends BaseOperation implements ILegacySte
     });
     steeringStatusLatency.add(response.timings.duration);
 
-    const data = ok ? parseBody<SteeringServiceStatus>(response) : undefined;
+    const data = ok ? parseBody<SteeringServiceStatus>(response) ?? undefined : undefined;
 
     return { response, ok, data };
   }

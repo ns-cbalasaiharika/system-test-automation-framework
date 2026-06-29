@@ -25,7 +25,7 @@ scenarios/provisioner/
 ## Config Files
 
 Each scenario needs a corresponding YAML config in:
-`config/workloads/provisioner/`
+`config/scenarios/provisioner/`
 
 ## Reference
 

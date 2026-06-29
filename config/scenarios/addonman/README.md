@@ -9,7 +9,7 @@ Each scenario in `scenarios/addonman/` needs a corresponding YAML config here.
 ## File Naming
 
 Match the scenario file name:
-- `scenarios/addonman/am01-golden-baseline.ts` → `config/workloads/addonman/am01-golden-baseline.yaml`
+- `scenarios/addonman/am01-golden-baseline.ts` → `config/scenarios/addonman/am01-golden-baseline.yaml`
 
 ## Required Fields
 
@@ -43,4 +43,4 @@ passCriteria:
 
 ## Reference
 
-- See `config/workloads/client-oppy/bl01-golden-baseline.yaml` for a working example
+- See `config/scenarios/client-oppy/bl01-golden-baseline.yaml` for a working example

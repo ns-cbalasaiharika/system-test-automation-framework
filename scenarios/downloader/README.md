@@ -25,7 +25,7 @@ scenarios/downloader/
 ## Config Files
 
 Each scenario needs a corresponding YAML config in:
-`config/workloads/downloader/`
+`config/scenarios/downloader/`
 
 ## Reference
 

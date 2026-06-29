@@ -11,7 +11,7 @@ Each scenario in `scenarios/user-manager/` needs a corresponding YAML config her
 ## File Naming
 
 Match the scenario file name:
-- `scenarios/user-manager/um01-golden-baseline.ts` → `config/workloads/user-manager/um01-golden-baseline.yaml`
+- `scenarios/user-manager/um01-golden-baseline.ts` → `config/scenarios/user-manager/um01-golden-baseline.yaml`
 
 ## Required Fields
 
@@ -50,4 +50,4 @@ passCriteria:
 
 ## Reference
 
-- See `config/workloads/client-oppy/bl01-golden-baseline.yaml` for a working example
+- See `config/scenarios/client-oppy/bl01-golden-baseline.yaml` for a working example

@@ -73,9 +73,28 @@ const envName = __ENV.ENV || 'rancher';
 const includeServices = __ENV.SERVICES?.split(',').map(s => s.trim()) || null;
 const excludeServices = __ENV.EXCLUDE_SERVICES?.split(',').map(s => s.trim()) || [];
 
-const clusterServicesYaml = open('../../config/cluster-load/cluster-services.yaml');
-const loadProfilesYaml = open('../../config/cluster-load/load-profiles.yaml');
-const envConfigYaml = open(`../../config/environments/${envName}.yaml`);
+// Try multiple paths to support both local and in-cluster execution
+const CONFIG_PATHS = [
+  '/config',                    // k6-operator (in-cluster)
+  '../../config',               // Local execution from dist/scenarios/background/
+  '../../../config',            // Alternative nesting
+  'config',                     // Running from project root
+];
+
+function loadConfigFile(subPath: string): string {
+  for (const prefix of CONFIG_PATHS) {
+    try {
+      return open(`${prefix}/${subPath}`);
+    } catch {
+      // Try next path
+    }
+  }
+  throw new Error(`Config file not found: ${subPath} (tried: ${CONFIG_PATHS.join(', ')})`);
+}
+
+const clusterServicesYaml = loadConfigFile('cluster-load/cluster-services.yaml');
+const loadProfilesYaml = loadConfigFile('cluster-load/load-profiles.yaml');
+const envConfigYaml = loadConfigFile(`environments/${envName}.yaml`);
 
 const clusterServices = parseYAML(clusterServicesYaml) as unknown as ClusterServicesConfig;
 const loadProfiles = parseYAML(loadProfilesYaml) as unknown as LoadProfilesConfig;
@@ -95,6 +114,7 @@ interface ServiceLoadConfig {
   baseUrl: string;
   rps: number;
   operations: ServiceOperation[];
+  healthEndpoint: string;
 }
 
 const serviceLoadConfigs: ServiceLoadConfig[] = [];
@@ -120,6 +140,7 @@ for (const [serviceName, serviceConfig] of Object.entries(clusterServices.servic
     baseUrl,
     rps,
     operations: serviceConfig.operations,
+    healthEndpoint: serviceConfig.healthEndpoint || '/health',
   });
 }
 
@@ -259,14 +280,17 @@ function resolvePath(path: string): string {
 export function setup(): void {
   console.log(`[Cluster Load] Starting background load with profile: ${loadProfileName}`);
   console.log(`[Cluster Load] Target RPS: ${totalRPS}`);
+  console.log(`[Cluster Load] Services targeted:`);
   
-  // Health check all services
+  // Health check all services using their configured health endpoint
   for (const svc of serviceLoadConfigs) {
+    const healthPath = svc.healthEndpoint || '/health';
+    console.log(`[Cluster Load]   - ${svc.name}: ${svc.rps} RPS`);
     try {
-      const res = http.get(`${svc.baseUrl}/health`, { timeout: '5s' });
-      console.log(`[Cluster Load] ${svc.name}: ${res.status === 200 ? 'HEALTHY' : 'UNHEALTHY'}`);
+      const res = http.get(`${svc.baseUrl}${healthPath}`, { timeout: '5s' });
+      console.log(`[Cluster Load]     Health (${healthPath}): ${res.status === 200 ? 'OK' : res.status}`);
     } catch {
-      console.log(`[Cluster Load] ${svc.name}: UNREACHABLE`);
+      console.log(`[Cluster Load]     Health (${healthPath}): UNREACHABLE`);
     }
   }
 }

@@ -25,7 +25,7 @@ scenarios/device-classification/
 ## Config Files
 
 Each scenario needs a corresponding YAML config in:
-`config/workloads/device-classification/`
+`config/scenarios/device-classification/`
 
 ## Reference
 

@@ -9,4 +9,4 @@ Data integrity scenarios for User Manager service.
 
 ## Reference
 
-- Config: `config/workloads/user-manager/um-di*.yaml`
+- Config: `config/scenarios/user-manager/um-di*.yaml`

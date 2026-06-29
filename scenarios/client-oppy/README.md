@@ -43,4 +43,4 @@ scenarios/client-oppy/
 ## Config Files
 
 Each scenario needs a corresponding YAML config in:
-`config/workloads/client-oppy/`
+`config/scenarios/client-oppy/`

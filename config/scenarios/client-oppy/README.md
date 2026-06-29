@@ -9,7 +9,7 @@ Each scenario in `scenarios/baseline/` (and other client-oppy scenario folders) 
 ## File Naming
 
 Match the scenario file name:
-- `scenarios/baseline/bl01-golden-baseline.ts` → `config/workloads/client-oppy/bl01-golden-baseline.yaml`
+- `scenarios/baseline/bl01-golden-baseline.ts` → `config/scenarios/client-oppy/bl01-golden-baseline.yaml`
 
 ## Current Scenarios
 

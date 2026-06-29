@@ -6,7 +6,7 @@
  * 2. Replace 'TEMPLATE' with your service name
  * 3. Update the API endpoints and response types
  * 4. Add service URL to config/environments/*.yaml
- * 5. Create workload configs in config/workloads/
+ * 5. Create workload configs in config/scenarios/
  * 6. Create scenario scripts in scenarios/<category>/
  */
 

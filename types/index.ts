@@ -79,7 +79,7 @@ export type {
   IUserManagerOperation,
   // Steering types
   SteeringDomain,
-  ISteeringOperation,
+  ISteeringCrudOperation,
   // Handler types
   OperationHandler,
   OperationHandlers,

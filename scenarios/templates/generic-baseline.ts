@@ -13,7 +13,7 @@
  * 1. Copy this file to scenarios/<service>/<category>/<scenario-id>.ts
  * 2. Update SCENARIO_ID to match your config file name
  * 3. Implement the service-specific operations
- * 4. Create corresponding YAML config in config/workloads/<service>/
+ * 4. Create corresponding YAML config in config/scenarios/<service>/
  */
 
 import { loadConfig, buildScenarioOptions } from '../../lib/config-loader';

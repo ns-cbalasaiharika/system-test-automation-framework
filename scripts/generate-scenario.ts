@@ -316,7 +316,7 @@ function generateFiles(options: GeneratorOptions): void {
   
   // Determine paths
   const scenarioDir = path.join(baseDir, 'scenarios', options.service, options.category);
-  const configDir = path.join(baseDir, 'config', 'workloads', options.service);
+  const configDir = path.join(baseDir, 'config', 'scenarios', options.service);
   
   const scenarioFile = path.join(scenarioDir, `${options.id}.ts`);
   const configFile = path.join(configDir, `${options.id}.yaml`);

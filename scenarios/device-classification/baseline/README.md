@@ -17,4 +17,4 @@ Baseline performance scenarios for Device Classification services.
 
 ## Reference
 
-- Config: `config/workloads/device-classification/dc-bl*.yaml`
+- Config: `config/scenarios/device-classification/dc-bl*.yaml`

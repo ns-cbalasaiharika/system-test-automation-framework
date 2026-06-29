@@ -9,4 +9,4 @@ Compound fault injection scenarios for Provisioner services.
 
 ## Reference
 
-- Config: `config/workloads/provisioner/pv-cf*.yaml`
+- Config: `config/scenarios/provisioner/pv-cf*.yaml`

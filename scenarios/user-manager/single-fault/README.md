@@ -9,4 +9,4 @@ Single fault injection scenarios for User Manager service.
 
 ## Reference
 
-- Config: `config/workloads/user-manager/um-sf*.yaml`
+- Config: `config/scenarios/user-manager/um-sf*.yaml`

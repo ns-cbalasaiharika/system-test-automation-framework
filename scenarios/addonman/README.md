@@ -26,7 +26,7 @@ scenarios/addonman/
 ## Config Files
 
 Each scenario needs a corresponding YAML config in:
-`config/workloads/addonman/`
+`config/scenarios/addonman/`
 
 ## Reference
 

@@ -1,6 +1,9 @@
 # Test results (generated, not committed)
-results/*.json
+results/
 
 # Node modules (if bundler is added later)
 node_modules/
 dist/
+
+
+docs/

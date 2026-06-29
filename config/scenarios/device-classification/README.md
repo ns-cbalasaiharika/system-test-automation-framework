@@ -9,7 +9,7 @@ Each scenario in `scenarios/device-classification/` needs a corresponding YAML c
 ## File Naming
 
 Match the scenario file name:
-- `scenarios/device-classification/dc01-golden-baseline.ts` → `config/workloads/device-classification/dc01-golden-baseline.yaml`
+- `scenarios/device-classification/dc01-golden-baseline.ts` → `config/scenarios/device-classification/dc01-golden-baseline.yaml`
 
 ## Required Fields
 
@@ -48,4 +48,4 @@ passCriteria:
 
 ## Reference
 
-- See `config/workloads/client-oppy/bl01-golden-baseline.yaml` for a working example
+- See `config/scenarios/client-oppy/bl01-golden-baseline.yaml` for a working example

@@ -1,14 +1,13 @@
 # =============================================================================
-# RANCHER ENVIRONMENT
-# For k6 tests running inside Rancher Kubernetes cluster (via k6-operator)
-# Update service URLs to match your Rancher cluster configuration
+# MINIKUBE-CLUSTER ENVIRONMENT
+# For k6 tests running INSIDE the Kubernetes cluster (via k6-operator)
+# Services accessed via Kubernetes DNS
 # =============================================================================
 
-name: rancher
-description: k6 running inside Rancher cluster via k6-operator
+name: minikube-cluster
+description: k6 running inside Minikube cluster via k6-operator
 
-# Update these URLs for your Rancher cluster
-# Use Kubernetes service DNS or ingress URLs
+# Kubernetes service DNS names
 services:
   client-oppy-configuration: http://client-oppy-configuration.client-oppy.svc.cluster.local
   client-oppy-steering: http://client-oppy-steering.client-oppy.svc.cluster.local
