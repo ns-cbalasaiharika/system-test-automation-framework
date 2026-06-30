@@ -54,13 +54,16 @@ export CLIENT_OPPY_PATH=/path/to/client-oppy
 ├── scripts/
 │   ├── setup-client-oppy-minikube.sh  # Full environment setup
 │   ├── k6-operator-test.sh            # Test runner + load control (PRIMARY)
+│   ├── monitoring.sh                  # Prometheus/Grafana port-forward helper
 │   ├── fault-inject/                  # Toxiproxy fault injection
 │   └── verify/                        # Data verification scripts
 ├── k8s/
 │   ├── minikube/           # Minikube deployment (Helmfile + values)
 │   ├── testrun/            # k6-operator TestRun manifests
 │   └── toxiproxy/          # Toxiproxy for fault injection
-├── docs/                   # Scenario documentation (CSV)
+├── docs/
+│   ├── images/             # Documentation screenshots
+│   └── *.csv               # Scenario documentation
 └── dist/                   # Webpack-bundled scenarios (generated)
 ```
 
@@ -404,6 +407,77 @@ profiles:
 ### Service Targets
 
 Services targeted by the load generator are defined in `config/cluster-load/cluster-services.yaml`. Add new services to extend load coverage.
+
+## Monitoring Setup (Prometheus & Grafana)
+
+The framework integrates with **Prometheus** and **Grafana** for real-time metrics visualization. k6 metrics are streamed directly to Prometheus using the native **remote-write** protocol.
+
+### Access Monitoring UIs
+
+```bash
+# Start port-forwards (use the helper script)
+./scripts/monitoring.sh start
+```
+
+| Service | URL | Credentials |
+|---------|-----|-------------|
+| **Prometheus** | http://localhost:9090 | N/A |
+| **Grafana** | http://localhost:3000 | admin / admin123 |
+
+### k6 Metrics in Prometheus
+
+When tests run via `k6-operator-test.sh`, metrics are automatically sent to Prometheus. Run a test and then query the metrics:
+
+![k6 Metrics in Prometheus](docs/images/prometheus-k6-metrics.png)
+
+### Useful Prometheus Queries
+
+| Query | Description |
+|-------|-------------|
+| `k6_http_reqs_total` | Total HTTP requests made by k6 |
+| `sum by (service) (k6_http_reqs_total)` | Requests grouped by service |
+| `rate(k6_http_reqs_total[1m])` | Current requests per second |
+| `histogram_quantile(0.95, k6_http_req_duration_seconds_bucket)` | P95 latency |
+| `k6_errors_rate` | Error rate |
+| `k6_iteration_duration_seconds` | Test iteration duration |
+
+### Available k6 Metrics (27 total)
+
+| Metric | Description |
+|--------|-------------|
+| `k6_http_reqs_total` | Total HTTP requests |
+| `k6_http_req_duration_seconds` | Request latency histogram |
+| `k6_http_req_failed_rate` | Failed request rate |
+| `k6_data_received_total` | Bytes received |
+| `k6_data_sent_total` | Bytes sent |
+| `k6_iterations_total` | Test iterations completed |
+| `k6_checks_rate` | Check pass rate |
+| `k6_errors_rate` | Overall error rate |
+| `k6_latency_*_seconds` | Custom latency metrics per operation |
+
+### Monitoring Helper Script
+
+```bash
+./scripts/monitoring.sh start   # Start Prometheus & Grafana port-forwards
+./scripts/monitoring.sh stop    # Stop port-forwards
+./scripts/monitoring.sh status  # Check if monitoring is accessible
+./scripts/monitoring.sh urls    # Show access URLs and credentials
+```
+
+**Note**: Metrics are only visible **while tests are running**. Start a load test to see live metrics:
+
+```bash
+# Start background load to see continuous metrics
+./scripts/k6-operator-test.sh start-load light --env minikube-cluster
+
+# View metrics at http://localhost:9090
+# Query: k6_http_reqs_total
+
+# Stop when done
+./scripts/k6-operator-test.sh stop-load
+```
+
+---
 
 ## Monitoring During Tests
 

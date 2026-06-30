@@ -49,6 +49,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 COMMAND=""
 
+# Prometheus configuration
+PROMETHEUS_ENABLED="true"
+PROMETHEUS_URL="http://prometheus-kube-prometheus-prometheus.monitoring:9090/api/v1/write"
+
 # Show help
 show_help() {
     echo "Usage: $0 <command> [options]"
@@ -260,12 +264,20 @@ spec:
   arguments: >-
     --env LOAD_PROFILE=$load_profile
     --env ENV=$ENV
+    --out experimental-prometheus-rw
   runner:
     image: grafana/k6:latest
     resources:
       limits:
         cpu: "500m"
         memory: "256Mi"
+    env:
+      - name: K6_PROMETHEUS_RW_SERVER_URL
+        value: "$PROMETHEUS_URL"
+      - name: K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM
+        value: "true"
+      - name: K6_PROMETHEUS_RW_STALE_MARKERS
+        value: "true"
     volumes:
       - name: cluster-load-config
         configMap:
@@ -385,12 +397,20 @@ spec:
   arguments: >-
     --env ENV=$ENV
     --env PROFILE=$PROFILE
+    --out experimental-prometheus-rw
   runner:
     image: grafana/k6:latest
     resources:
       limits:
         cpu: "500m"
         memory: "256Mi"
+    env:
+      - name: K6_PROMETHEUS_RW_SERVER_URL
+        value: "$PROMETHEUS_URL"
+      - name: K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM
+        value: "true"
+      - name: K6_PROMETHEUS_RW_STALE_MARKERS
+        value: "true"
     volumes:
       - name: env-config
         configMap:
