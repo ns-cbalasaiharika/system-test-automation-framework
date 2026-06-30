@@ -149,6 +149,40 @@ All tests run inside the Kubernetes cluster using **k6-operator**. This ensures:
 - Direct pod-to-pod communication via Kubernetes DNS
 - Consistent approach for Minikube and Rancher
 
+### k6-operator Architecture
+
+The k6-operator uses two Kubernetes namespaces:
+
+| Namespace | Purpose |
+|-----------|---------|
+| `k6-operator-system` | Control plane — the operator controller that watches for TestRun resources |
+| `k6-tests` | Execution area — where test pods are created and run |
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Kubernetes Cluster                        │
+│                                                              │
+│  ┌─────────────────────────┐    ┌─────────────────────────┐ │
+│  │  k6-operator-system     │    │  k6-tests               │ │
+│  │                         │    │                         │ │
+│  │  controller-manager ────┼────▶  scenario-bl01-pod      │ │
+│  │  (watches TestRun CRDs) │    │  (runs your k6 script)  │ │
+│  └─────────────────────────┘    └─────────────────────────┘ │
+│                                                              │
+│  ┌─────────────────────────┐                                │
+│  │  client-oppy            │◀── Test traffic goes here     │
+│  │  (target services)      │                                │
+│  └─────────────────────────┘                                │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Check operator status:**
+```bash
+kubectl get pods -n k6-operator-system    # Operator controller
+kubectl get pods -n k6-tests              # Active test pods
+kubectl get testrun -n k6-tests           # TestRun resources
+```
+
 ### Basic Test
 
 ```bash
